@@ -1,23 +1,22 @@
 /**
- * GitHub Pages 向け静的エクスポート設定。
+ * サーバーモード設定（Phase 2）。
  *
- * - `output: 'export'`   → `out/` に純粋な静的HTML/JS/CSSを書き出す（サーバー不要）。
- * - `basePath`           → プロジェクトページ（https://<user>.github.io/<repo>/）配下に
- *                          配信するためのサブパス。GitHub Actions が repo 名を渡す。
- * - `images.unoptimized` → next/image の最適化サーバーが無い静的環境では必須。
- * - `trailingSlash`      → `/editor` を `/editor/index.html` として解決させ、
- *                          GitHub Pages の素朴なルーティングでも 404 にならないようにする。
+ * Phase 1 は GitHub Pages 向けの静的エクスポート（output: 'export'）だったが、
+ * AI 生成・Remotion 結合を担う API Routes（サーバー実行）を導入したため、
+ * 静的エクスポートを外してサーバーモードに移行した。
+ * デプロイ先は Vercel など Node ランタイムを持つ環境を想定する。
+ *
+ * Remotion の @remotion/renderer / @remotion/bundler は Node 専用かつ重量級なので、
+ * サーバーバンドルに巻き込まれないよう serverExternalPackages で外部化する。
  */
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  basePath,
-  assetPrefix: basePath ? `${basePath}/` : undefined,
-  images: { unoptimized: true },
-  trailingSlash: true,
   reactStrictMode: true,
+  serverExternalPackages: [
+    "@remotion/bundler",
+    "@remotion/renderer",
+  ],
 };
 
 export default nextConfig;

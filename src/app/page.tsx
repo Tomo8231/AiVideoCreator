@@ -19,12 +19,18 @@ export default function HomePage() {
   const [title, setTitle] = useState("");
   const [script, setScript] = useState("");
   const [phase, setPhase] = useState<Phase>("input");
+  const [splitting, setSplitting] = useState(false);
 
   const sceneCount = project?.scenes.length ?? 0;
 
   async function handleGenerate() {
-    if (!script.trim()) return;
-    createProjectFromScript(title, script);
+    if (!script.trim() || splitting) return;
+    setSplitting(true);
+    try {
+      await createProjectFromScript(title, script);
+    } finally {
+      setSplitting(false);
+    }
     setPhase("generating");
     await generateAll();
   }
@@ -52,6 +58,7 @@ export default function HomePage() {
         <InputPhase
           title={title}
           script={script}
+          busy={splitting}
           onTitle={setTitle}
           onScript={setScript}
           onUseSample={() => setScript(SAMPLE_SCRIPT)}
@@ -73,6 +80,7 @@ export default function HomePage() {
 function InputPhase({
   title,
   script,
+  busy,
   onTitle,
   onScript,
   onUseSample,
@@ -80,6 +88,7 @@ function InputPhase({
 }: {
   title: string;
   script: string;
+  busy: boolean;
   onTitle: (v: string) => void;
   onScript: (v: string) => void;
   onUseSample: () => void;
@@ -121,12 +130,16 @@ function InputPhase({
 
       <button
         type="button"
-        disabled={!script.trim()}
+        disabled={!script.trim() || busy}
         onClick={onGenerate}
         className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-sm font-semibold text-white transition enabled:hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <Sparkles size={17} />
-        解析して動画を生成
+        {busy ? (
+          <Loader2 size={17} className="animate-spin" />
+        ) : (
+          <Sparkles size={17} />
+        )}
+        {busy ? "台本を解析中…" : "解析して動画を生成"}
       </button>
       <p className="text-center text-[11px] leading-relaxed text-gray-500">
         ※ デモ版：動画/音声生成はモックです。台本分割・タイムライン編集・字幕修正・

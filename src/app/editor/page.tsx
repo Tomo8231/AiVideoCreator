@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Film } from "lucide-react";
+import { ArrowLeft, Download, Film, Loader2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { totalDurationMs } from "@/lib/types";
 import { formatMsShort } from "@/lib/format";
+import { requestRender } from "@/lib/aiService";
 import { VideoPreview } from "@/components/VideoPreview";
 import { Timeline } from "@/components/Timeline";
 import { SceneInspector } from "@/components/SceneInspector";
@@ -24,6 +25,7 @@ export default function EditorPage() {
   const [mounted, setMounted] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentMs, setCurrentMs] = useState(0);
+  const [rendering, setRendering] = useState(false);
 
   // localStorage 永続化の rehydrate はクライアントのみ。SSR との不一致を避ける。
   useEffect(() => setMounted(true), []);
@@ -62,19 +64,49 @@ export default function EditorPage() {
     );
   }
 
-  function handleExport() {
-    // 静的ホスティングでは実際の mp4 結合（Remotion/サーバー）は行えないため、
-    // ここではデモとして結合パラメータのサマリを表示する。
-    const summary = [
-      `タイトル: ${project!.title}`,
-      `シーン数: ${project!.scenes.length}`,
-      `総尺: ${formatMsShort(totalDurationMs(project!))}`,
-      `BGM: ${project!.bgmEnabled ? `ON（ダッキング -${Math.round(project!.duckingAmount * 100)}%）` : "OFF"}`,
-      "",
-      "※ 実装版ではこのパラメータを Next.js/Remotion サーバーへ送信し、",
-      "  9:16 の mp4 として結合・レンダリングします。",
-    ].join("\n");
-    alert(summary);
+  async function handleExport() {
+    if (!project || rendering) return;
+    setRendering(true);
+    try {
+      // Remotion 結合を /api/render に依頼（要件 3.2）。
+      const result = await requestRender({
+        title: project.title,
+        bgmEnabled: project.bgmEnabled,
+        duckingAmount: project.duckingAmount,
+        scenes: project.scenes.map((s) => ({
+          id: s.id,
+          order: s.order,
+          subtitle: s.subtitle,
+          durationMs: s.durationMs,
+          transition: s.transition,
+          previewColor: s.previewColor,
+        })),
+      });
+
+      if (result?.rendered && result.videoUrl) {
+        // 実レンダリング成功 → mp4 を開く。
+        window.open(result.videoUrl, "_blank");
+        return;
+      }
+
+      // レンダリング不可（Chromium未導入等）またはモードmock → 結合プランを提示。
+      const plan = result?.plan;
+      const summary = [
+        result
+          ? "サーバーで結合を実行しました（実レンダリングは環境依存）。"
+          : "クライアントモードのため結合プランのみ表示します。",
+        "",
+        `タイトル: ${project.title}`,
+        `シーン数: ${plan?.sceneCount ?? project.scenes.length}`,
+        `総尺: ${formatMsShort(plan?.totalDurationMs ?? totalDurationMs(project))}`,
+        `解像度: ${plan ? `${plan.width}x${plan.height} @${plan.fps}fps` : "1080x1920 @30fps"}`,
+        `BGM: ${project.bgmEnabled ? `ON（ダッキング -${Math.round(project.duckingAmount * 100)}%）` : "OFF"}`,
+        result?.error ? `\n注: ${result.error}` : "",
+      ].join("\n");
+      alert(summary);
+    } finally {
+      setRendering(false);
+    }
   }
 
   return (
@@ -92,9 +124,15 @@ export default function EditorPage() {
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-soft"
+          disabled={rendering}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition enabled:hover:bg-accent-soft disabled:opacity-50"
         >
-          <Download size={14} /> 書き出し
+          {rendering ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Download size={14} />
+          )}
+          {rendering ? "結合中…" : "書き出し"}
         </button>
       </header>
 

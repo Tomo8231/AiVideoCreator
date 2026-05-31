@@ -9,18 +9,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Project, Scene } from "./types";
-import {
-  generateAudio,
-  generateVideo,
-  splitScriptIntoScenes,
-  uid,
-} from "./mockApi";
+import { uid } from "./sceneSplit";
+import { requestAudio, requestSplit, requestVideo } from "./aiService";
 
 interface AppState {
   project: Project | null;
 
   /** 台本から新規プロジェクトを作成し、シーン分割する（要件 3.1）。 */
-  createProjectFromScript: (title: string, script: string) => void;
+  createProjectFromScript: (title: string, script: string) => Promise<void>;
   /** プロジェクトを破棄して最初からやり直す。 */
   resetProject: () => void;
 
@@ -50,8 +46,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       project: null,
 
-      createProjectFromScript: (title, script) => {
-        const scenes = splitScriptIntoScenes(script);
+      createProjectFromScript: async (title, script) => {
+        const scenes = await requestSplit(script);
         const project: Project = {
           id: uid(),
           title: title.trim() || "無題のプロジェクト",
@@ -85,12 +81,12 @@ export const useAppStore = create<AppState>()(
         // 各シーンの動画・音声を「同時キック」。完了ごとに個別に状態反映する。
         await Promise.all(
           project.scenes.flatMap((scene) => [
-            generateVideo(scene).then((r) =>
+            requestVideo(scene).then((r) =>
               get().updateScene(scene.id, {
                 videoStatus: r.ok ? "ready" : "failed",
               })
             ),
-            generateAudio(scene).then((r) =>
+            requestAudio(scene).then((r) =>
               get().updateScene(scene.id, {
                 audioStatus: r.ok ? "ready" : "failed",
               })
@@ -111,8 +107,8 @@ export const useAppStore = create<AppState>()(
 
         const target: Scene = { ...current, videoPrompt: prompt };
         const [v, a] = await Promise.all([
-          generateVideo(target),
-          generateAudio(target),
+          requestVideo(target),
+          requestAudio(target),
         ]);
         apply({
           videoStatus: v.ok ? "ready" : "failed",
