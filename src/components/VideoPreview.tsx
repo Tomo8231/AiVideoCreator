@@ -72,7 +72,7 @@ export function VideoPreview({
   return (
     <div className="flex flex-col items-center">
       {/* 9:16 フレーム */}
-      <div className="relative aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-2xl border border-ink-700 bg-black">
+      <div className="relative aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-2xl border border-ink-700 bg-black lg:max-w-[300px]">
         {activeScene ? (
           <div
             className="absolute inset-0 transition-[background] duration-300"
@@ -126,7 +126,7 @@ export function VideoPreview({
       </div>
 
       {/* 再生コントロール + シークバー */}
-      <div className="mt-3 flex w-full max-w-[260px] flex-col gap-2">
+      <div className="mt-3 flex w-full max-w-[260px] flex-col gap-2 lg:max-w-[300px]">
         <input
           type="range"
           min={0}

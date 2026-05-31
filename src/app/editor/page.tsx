@@ -10,6 +10,7 @@ import { VideoPreview } from "@/components/VideoPreview";
 import { Timeline } from "@/components/Timeline";
 import { SceneInspector } from "@/components/SceneInspector";
 import { AudioSettings } from "@/components/AudioSettings";
+import { SettingsLink } from "@/components/SettingsLink";
 
 export default function EditorPage() {
   const router = useRouter();
@@ -78,70 +79,81 @@ export default function EditorPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-8 pt-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-8 pt-4 sm:px-6">
       {/* ヘッダー */}
-      <header className="mb-4 flex items-center justify-between">
+      <header className="mb-4 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => router.push("/")}
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200"
+          className="inline-flex shrink-0 items-center gap-1 text-sm text-gray-400 hover:text-gray-200"
         >
           <ArrowLeft size={16} /> 戻る
         </button>
         <h1 className="truncate px-2 text-sm font-semibold">{project.title}</h1>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-soft"
-        >
-          <Download size={14} /> 書き出し
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <SettingsLink className="hidden sm:inline-flex" />
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-soft"
+          >
+            <Download size={14} /> 書き出し
+          </button>
+        </div>
       </header>
 
-      {/* プレビュー */}
-      <VideoPreview project={project} currentMs={currentMs} onSeek={setCurrentMs} />
-
-      {/* タイムライン */}
-      <section className="mt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          タイムライン（ドラッグで並び替え）
-        </h2>
-        <Timeline
-          scenes={project.scenes}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onReorder={reorderScenes}
-        />
-      </section>
-
-      {/* 音声設定 */}
-      <section className="mt-4">
-        <AudioSettings
-          bgmEnabled={project.bgmEnabled}
-          duckingAmount={project.duckingAmount}
-          onBgmChange={setBgmEnabled}
-          onDuckingChange={setDuckingAmount}
-        />
-      </section>
-
-      {/* 選択シーンの編集 */}
-      <section className="mt-4 rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
-        {selectedScene ? (
-          <SceneInspector
-            scene={selectedScene}
-            onUpdate={(patch) => updateScene(selectedScene.id, patch)}
-            onRetake={(prompt) => retakeScene(selectedScene.id, prompt)}
-            onRemove={() => {
-              removeScene(selectedScene.id);
-              setSelectedId(null);
-            }}
+      {/* PC: 左にプレビュー（固定）+ 音声設定、右に編集。モバイル: 縦積み。 */}
+      <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        {/* プレビュー列 */}
+        <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:w-[340px] lg:shrink-0">
+          <VideoPreview
+            project={project}
+            currentMs={currentMs}
+            onSeek={setCurrentMs}
           />
-        ) : (
-          <p className="text-center text-xs text-gray-500">
-            タイムラインからシーンを選択して編集します。
-          </p>
-        )}
-      </section>
+          <AudioSettings
+            bgmEnabled={project.bgmEnabled}
+            duckingAmount={project.duckingAmount}
+            onBgmChange={setBgmEnabled}
+            onDuckingChange={setDuckingAmount}
+          />
+        </div>
+
+        {/* 編集列 */}
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {/* タイムライン */}
+          <section>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              タイムライン（ドラッグで並び替え）
+            </h2>
+            <Timeline
+              scenes={project.scenes}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onReorder={reorderScenes}
+            />
+          </section>
+
+          {/* 選択シーンの編集 */}
+          <section className="rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
+            {selectedScene ? (
+              <SceneInspector
+                scene={selectedScene}
+                onUpdate={(patch) => updateScene(selectedScene.id, patch)}
+                onRetake={(prompt) => retakeScene(selectedScene.id, prompt)}
+                onRemove={() => {
+                  removeScene(selectedScene.id);
+                  setSelectedId(null);
+                }}
+              />
+            ) : (
+              <p className="text-center text-xs text-gray-500">
+                タイムラインからシーンを選択して編集します。
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
     </main>
   );
 }
