@@ -14,6 +14,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
-  const result = await synthesizeNarration(body.text ?? "");
+  const result = await synthesizeNarration(body.text ?? "", {
+    apiKey: req.headers.get("x-elevenlabs-key") || undefined,
+    voiceId: req.headers.get("x-elevenlabs-voice") || undefined,
+  });
   return NextResponse.json(result);
 }

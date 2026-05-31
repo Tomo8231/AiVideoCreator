@@ -9,13 +9,22 @@ import { estimateDurationMs } from "@/lib/sceneSplit";
 
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM"; // ElevenLabs の公開デフォルトボイス(Rachel)
 
-export async function synthesizeNarration(text: string): Promise<GenerationResult> {
+/** キー類は呼び出し側（リクエストヘッダー）優先、無ければ env にフォールバック。 */
+export interface AudioOptions {
+  apiKey?: string;
+  voiceId?: string;
+}
+
+export async function synthesizeNarration(
+  text: string,
+  opts: AudioOptions = {}
+): Promise<GenerationResult> {
   const clean = text.trim();
   if (!clean) {
     return { ok: false, provider: "mock", mock: true, error: "テキストが空です" };
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const apiKey = opts.apiKey || process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     // モック: 実際の音声は生成せず、尺だけ推定して成功扱いにする。
     return {
@@ -26,7 +35,8 @@ export async function synthesizeNarration(text: string): Promise<GenerationResul
     };
   }
 
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
+  const voiceId =
+    opts.voiceId || process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
   try {
     const res = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,

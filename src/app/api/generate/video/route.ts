@@ -14,6 +14,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
-  const result = await generateClip(body.prompt ?? "");
+  const result = await generateClip(body.prompt ?? "", {
+    apiKey: req.headers.get("x-runway-key") || undefined,
+  });
   return NextResponse.json(result);
 }

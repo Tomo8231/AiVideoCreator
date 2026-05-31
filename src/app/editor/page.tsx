@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Film, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Film, Loader2, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { totalDurationMs } from "@/lib/types";
 import { formatMsShort } from "@/lib/format";
@@ -121,19 +121,29 @@ export default function EditorPage() {
           <ArrowLeft size={16} /> 戻る
         </button>
         <h1 className="truncate px-2 text-sm font-semibold">{project.title}</h1>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={rendering}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition enabled:hover:bg-accent-soft disabled:opacity-50"
-        >
-          {rendering ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Download size={14} />
-          )}
-          {rendering ? "結合中…" : "書き出し"}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => router.push("/settings")}
+            className="p-1.5 text-gray-400 hover:text-gray-200"
+            aria-label="設定"
+          >
+            <Settings size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={rendering}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition enabled:hover:bg-accent-soft disabled:opacity-50"
+          >
+            {rendering ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Download size={14} />
+            )}
+            {rendering ? "結合中…" : "書き出し"}
+          </button>
+        </div>
       </header>
 
       {/* プレビュー */}

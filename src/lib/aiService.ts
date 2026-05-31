@@ -20,17 +20,36 @@ import {
   generateAudio as mockAudio,
   generateVideo as mockVideo,
 } from "./mockApi";
+import { useSettingsStore } from "./settingsStore";
 
-const MODE = process.env.NEXT_PUBLIC_API_MODE ?? "server";
-const useServer = MODE !== "mock";
+/** 設定ストアから現在のモードを判定（mock のときはサーバーを使わない）。 */
+function isServerMode(): boolean {
+  return useSettingsStore.getState().apiMode !== "mock";
+}
+
+/**
+ * 設定画面で入力された API キーをリクエストヘッダーに載せる。
+ * 未入力のキーは送らない（サーバー側の env フォールバックに委ねる）。
+ */
+function buildHeaders(): Record<string, string> {
+  const s = useSettingsStore.getState();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (s.elevenLabsKey) headers["x-elevenlabs-key"] = s.elevenLabsKey;
+  if (s.elevenLabsVoiceId) headers["x-elevenlabs-voice"] = s.elevenLabsVoiceId;
+  if (s.runwayKey) headers["x-runway-key"] = s.runwayKey;
+  if (s.anthropicKey) headers["x-anthropic-key"] = s.anthropicKey;
+  return headers;
+}
 
 /** 台本をシーンに分割する。 */
 export async function requestSplit(script: string): Promise<Scene[]> {
-  if (useServer) {
+  if (isServerMode()) {
     try {
       const res = await fetch("/api/scenes/split", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildHeaders(),
         body: JSON.stringify({ script }),
       });
       if (res.ok) {
@@ -46,7 +65,7 @@ export async function requestSplit(script: string): Promise<Scene[]> {
 
 /** シーンの動画クリップを生成（成否のみ返す）。 */
 export async function requestVideo(scene: Scene): Promise<{ ok: boolean }> {
-  if (useServer) {
+  if (isServerMode()) {
     const r = await postGenerate("/api/generate/video", {
       prompt: scene.videoPrompt,
     });
@@ -57,7 +76,7 @@ export async function requestVideo(scene: Scene): Promise<{ ok: boolean }> {
 
 /** シーンのナレーション音声を生成（成否のみ返す）。 */
 export async function requestAudio(scene: Scene): Promise<{ ok: boolean }> {
-  if (useServer) {
+  if (isServerMode()) {
     const r = await postGenerate("/api/generate/audio", {
       text: scene.subtitle,
     });
@@ -70,11 +89,11 @@ export async function requestAudio(scene: Scene): Promise<{ ok: boolean }> {
 export async function requestRender(
   body: RenderRequest
 ): Promise<RenderResponse | null> {
-  if (!useServer) return null;
+  if (!isServerMode()) return null;
   try {
     const res = await fetch("/api/render", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(),
       body: JSON.stringify(body),
     });
     return (await res.json()) as RenderResponse;
@@ -90,7 +109,7 @@ async function postGenerate(
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) return { ok: false, provider: "server", mock: false };

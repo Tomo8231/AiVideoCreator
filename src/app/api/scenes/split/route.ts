@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "script is required" }, { status: 400 });
   }
 
-  const result = await splitScript(body.script);
+  const result = await splitScript(body.script, {
+    apiKey: req.headers.get("x-anthropic-key") || undefined,
+  });
   return NextResponse.json(result);
 }

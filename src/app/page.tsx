@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Clapperboard, Sparkles, FileText, Loader2 } from "lucide-react";
+import { Clapperboard, Sparkles, FileText, Loader2, Settings } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { SAMPLE_SCRIPT } from "@/lib/sampleScript";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -48,10 +48,18 @@ export default function HomePage() {
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/20 text-accent-soft">
           <Clapperboard size={20} />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold leading-tight">AIVideoCreator</h1>
           <p className="text-xs text-gray-400">台本から、AIが動画を生成・結合</p>
         </div>
+        <button
+          type="button"
+          onClick={() => router.push("/settings")}
+          className="p-2 text-gray-400 hover:text-gray-200"
+          aria-label="設定"
+        >
+          <Settings size={20} />
+        </button>
       </header>
 
       {phase === "input" && (

@@ -12,7 +12,14 @@ import { GenerationResult } from "@/lib/api";
 
 const MOCK_CLIP_MS = 4000;
 
-export async function generateClip(prompt: string): Promise<GenerationResult> {
+export interface VideoOptions {
+  apiKey?: string;
+}
+
+export async function generateClip(
+  prompt: string,
+  opts: VideoOptions = {}
+): Promise<GenerationResult> {
   const clean = prompt.trim();
   if (clean.length < 8) {
     return {
@@ -23,7 +30,7 @@ export async function generateClip(prompt: string): Promise<GenerationResult> {
     };
   }
 
-  const apiKey = process.env.RUNWAY_API_KEY;
+  const apiKey = opts.apiKey || process.env.RUNWAY_API_KEY;
   if (!apiKey) {
     return {
       ok: true,

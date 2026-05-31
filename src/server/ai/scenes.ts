@@ -7,10 +7,15 @@ import "server-only";
 import { Scene } from "@/lib/types";
 import { buildScenes, heuristicSplit } from "@/lib/sceneSplit";
 
+export interface SplitOptions {
+  apiKey?: string;
+}
+
 export async function splitScript(
-  script: string
+  script: string,
+  opts: SplitOptions = {}
 ): Promise<{ scenes: Scene[]; method: "llm" | "heuristic" }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = opts.apiKey || process.env.ANTHROPIC_API_KEY;
   if (apiKey) {
     try {
       const chunks = await llmSplit(script, apiKey);
