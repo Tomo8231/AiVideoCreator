@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: theme("colors.ink.950");
+  color: #e7e7ef;
+}
+
+/* モバイルファースト前提なので、タップ時のハイライトを抑制して
+   ネイティブアプリ風の操作感にする。 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 細いスクロールバー（タイムラインの横スクロール用）。 */
+.thin-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: theme("colors.ink.600");
+  border-radius: 9999px;
+}
