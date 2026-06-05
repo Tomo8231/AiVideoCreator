@@ -46,6 +46,12 @@ export interface Scene {
 
   /** モック上のプレビュー色（実装では生成動画のサムネ/動画URLに置き換わる）。 */
   previewColor: string;
+
+  /**
+   * RunWay image_to_video の起点画像（data URL）。
+   * 動画生成モデルは画像必須のため、ユーザーがシーンごとに添付する。
+   */
+  seedImage?: string;
 }
 
 /** プロジェクト全体（1 本の動画）。 */

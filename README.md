@@ -83,10 +83,10 @@ npm start        # 本番サーバー
 ## 今後（未実装）
 
 - Supabase 連携（Auth / DB / Storage・RLS）— 生成物の永続化と保護（要件 4）
-- RunWay 起点画像の供給（image_to_video 用）と生成メディアの Storage 保存
+- 生成メディア（音声/動画）の Storage 保存と data URL からの脱却
 - バックグラウンド Queue と Push 通知（要件 3.1）
 - Capacitor によるネイティブ化（要件 2）
 
 > RunWay の動画ジョブのポーリングは実装済み（`src/server/ai/runway.ts`）。
-> 動画モデルは image_to_video のため起点画像が必要で、UI からの画像供給は今後。
-> `RUNWAY_DEFAULT_IMAGE` で全シーン共通の起点画像を指定すれば実生成を試せる。
+> 動画モデルは image_to_video のため起点画像が必要で、エディタの「起点画像」から
+> シーンごとに添付できる（data URL）。全シーン共通の既定画像は `RUNWAY_DEFAULT_IMAGE`。

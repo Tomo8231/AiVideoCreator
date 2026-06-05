@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { RefreshCw, Trash2, Scissors, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  RefreshCw,
+  Trash2,
+  Scissors,
+  Loader2,
+  ImagePlus,
+  X,
+} from "lucide-react";
 import { Scene, TransitionType } from "@/lib/types";
 import { formatMs } from "@/lib/format";
 import { StatusBadge } from "./StatusBadge";
@@ -34,9 +41,30 @@ export function SceneInspector({
   onRemove: () => void;
 }) {
   const [retaking, setRetaking] = useState(false);
+  const [imgError, setImgError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const busy =
     scene.videoStatus === "generating" || scene.audioStatus === "generating";
+
+  /** 選択画像を data URL に変換して起点画像に設定する。 */
+  function handleFile(file: File | undefined) {
+    setImgError(null);
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setImgError("画像ファイルを選んでください");
+      return;
+    }
+    // data URL でシーンに保持するため、サイズは控えめに制限（~4MB）。
+    if (file.size > 4 * 1024 * 1024) {
+      setImgError("画像サイズは 4MB 以下にしてください");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => onUpdate({ seedImage: String(reader.result) });
+    reader.onerror = () => setImgError("画像の読み込みに失敗しました");
+    reader.readAsDataURL(file);
+  }
 
   async function handleRetake() {
     setRetaking(true);
@@ -112,6 +140,59 @@ export function SceneInspector({
           ))}
         </select>
       </label>
+
+      {/* 起点画像（RunWay image_to_video 用） */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium text-gray-400">
+          起点画像（動画生成のもとになる画像）
+        </span>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+        {scene.seedImage ? (
+          <div className="flex items-center gap-3">
+            {/* data URL を表示するため next/image ではなく img を使用 */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={scene.seedImage}
+              alt="起点画像"
+              className="h-16 w-16 rounded-lg border border-ink-700 object-cover"
+            />
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="self-start rounded-lg border border-ink-700 px-2.5 py-1.5 text-xs text-gray-300 hover:border-ink-600"
+              >
+                差し替え
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdate({ seedImage: undefined })}
+                className="inline-flex items-center gap-1 self-start text-xs text-red-400 hover:text-red-300"
+              >
+                <X size={12} /> 削除
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-ink-600 px-3 py-3 text-xs text-gray-400 hover:border-accent hover:text-gray-200"
+          >
+            <ImagePlus size={15} /> 画像を追加（任意）
+          </button>
+        )}
+        {imgError && <span className="text-[11px] text-red-400">{imgError}</span>}
+        <span className="text-[11px] leading-relaxed text-gray-500">
+          RunWay の動画生成は画像が起点です。未添付でもモック生成は動作します。
+        </span>
+      </div>
 
       {/* 部分再生成（リテイク） */}
       <div className="flex flex-col gap-1.5 rounded-lg border border-ink-700 bg-ink-900 p-3">

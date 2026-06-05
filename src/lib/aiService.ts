@@ -68,6 +68,7 @@ export async function requestVideo(scene: Scene): Promise<{ ok: boolean }> {
   if (isServerMode()) {
     const r = await postGenerate("/api/generate/video", {
       prompt: scene.videoPrompt,
+      promptImage: scene.seedImage,
     });
     if (r) return { ok: r.ok };
   }
