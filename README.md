@@ -37,6 +37,18 @@
 
 ## ローカル開発
 
+Windows なら `quickstart.bat` をダブルクリックで、依存インストール・`.env` 作成・
+サーバー起動まで一括実行できます（詳細は [doc/QUICKSTART.md](doc/QUICKSTART.md)）。
+
+```bat
+quickstart.bat            :: セットアップ + 開発サーバー
+quickstart.bat dev 3100   :: ポート3100で起動
+quickstart.bat prod       :: 本番ビルドして起動
+quickstart.bat check      :: セットアップのみ（起動しない）
+```
+
+手動で行う場合:
+
 ```bash
 npm install
 npm run dev      # http://localhost:3000
