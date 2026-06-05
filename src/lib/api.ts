@@ -38,6 +38,10 @@ export interface GenerateAudioRequest {
 // ---- /api/generate/video ----
 export interface GenerateVideoRequest {
   prompt: string;
+  /** image_to_video の起点画像（URL/data URI）。任意。 */
+  promptImage?: string;
+  /** クリップ尺（秒）。任意。 */
+  durationSec?: number;
 }
 
 // ---- /api/render ----

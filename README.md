@@ -65,6 +65,7 @@ npm start        # 本番サーバー
 | --- | --- |
 | 3.1 台本の自動シーン分割 | `/api/scenes/split`（Claude or ヒューリスティック） |
 | 3.1 マルチモーダル並列生成 + 進捗 | `/api/generate/{audio,video}` + 進捗UI |
+| 3.1 RunWay 動画ジョブのポーリング | `src/server/ai/runway.ts`（作成→`tasks/{id}`をポーリング→URL取得） |
 | 3.2 シームレス連結（ディゾルブ） | `src/remotion/VideoComposition.tsx` |
 | 3.2 BGM ダッキング | 結合 props に反映（音声設定パネル） |
 | 3.3 9:16 タイムラインプレビュー | `VideoPreview`（擬似再生・字幕オーバーレイ） |
@@ -82,6 +83,10 @@ npm start        # 本番サーバー
 ## 今後（未実装）
 
 - Supabase 連携（Auth / DB / Storage・RLS）— 生成物の永続化と保護（要件 4）
-- RunWay ジョブのポーリング完成、生成メディアの Storage 保存
+- RunWay 起点画像の供給（image_to_video 用）と生成メディアの Storage 保存
 - バックグラウンド Queue と Push 通知（要件 3.1）
 - Capacitor によるネイティブ化（要件 2）
+
+> RunWay の動画ジョブのポーリングは実装済み（`src/server/ai/runway.ts`）。
+> 動画モデルは image_to_video のため起点画像が必要で、UI からの画像供給は今後。
+> `RUNWAY_DEFAULT_IMAGE` で全シーン共通の起点画像を指定すれば実生成を試せる。
