@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ShieldAlert, Check, Trash2 } from "lucide-react";
 import { ApiMode, useSettingsStore } from "@/lib/settingsStore";
 import { KeyField } from "@/components/KeyField";
+import { useAuthStore } from "@/lib/authStore";
+import { LogIn, LogOut, FolderOpen } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -35,6 +37,9 @@ export default function SettingsPage() {
         </button>
         <h1 className="ml-1 text-lg font-bold">設定</h1>
       </header>
+
+      {/* アカウント（Supabase） */}
+      <AccountSection />
 
       {/* API モード */}
       <section className="mb-5">
@@ -138,5 +143,61 @@ export default function SettingsPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+/** アカウント（ログイン状態・サインアウト・クラウドプロジェクトへの導線）。 */
+function AccountSection() {
+  const router = useRouter();
+  const { configured, loading, user, signOut } = useAuthStore();
+
+  return (
+    <section className="mb-5">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        アカウント
+      </h2>
+      <div className="rounded-xl border border-ink-700 bg-ink-900 p-3">
+        {!configured ? (
+          <p className="text-[12px] leading-relaxed text-gray-400">
+            Supabase 未設定です。<code>NEXT_PUBLIC_SUPABASE_URL</code> /{" "}
+            <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
+            を設定するとログインとクラウド保存が有効になります。
+          </p>
+        ) : loading ? (
+          <p className="text-[12px] text-gray-500">確認中…</p>
+        ) : user ? (
+          <div className="flex flex-col gap-3">
+            <div className="text-sm">
+              <span className="text-gray-400">ログイン中: </span>
+              <span className="font-medium">{user.email ?? user.id}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/projects")}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ink-700 px-3 py-2 text-xs text-gray-200 hover:border-ink-600"
+              >
+                <FolderOpen size={14} /> クラウドのプロジェクト
+              </button>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-ink-700 px-3 py-2 text-xs text-red-400 hover:border-red-500/50"
+              >
+                <LogOut size={14} /> ログアウト
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push("/login")}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-white hover:bg-accent-soft"
+          >
+            <LogIn size={16} /> ログイン / 新規登録
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

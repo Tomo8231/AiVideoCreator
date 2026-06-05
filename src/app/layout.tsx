@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AuthInit } from "@/components/AuthInit";
 
 export const metadata: Metadata = {
   title: "AIVideoCreator",
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <AuthInit />
+        {children}
+      </body>
     </html>
   );
 }

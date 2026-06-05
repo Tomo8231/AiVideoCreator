@@ -17,6 +17,8 @@ interface AppState {
 
   /** 台本から新規プロジェクトを作成し、シーン分割する（要件 3.1）。 */
   createProjectFromScript: (title: string, script: string) => Promise<void>;
+  /** 既存プロジェクト（クラウド等）を読み込んで現在のプロジェクトにする。 */
+  setProject: (project: Project) => void;
   /** プロジェクトを破棄して最初からやり直す。 */
   resetProject: () => void;
 
@@ -59,6 +61,8 @@ export const useAppStore = create<AppState>()(
         };
         set({ project });
       },
+
+      setProject: (project) => set({ project }),
 
       resetProject: () => set({ project: null }),
 

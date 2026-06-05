@@ -12,6 +12,8 @@ import {
 import { Scene, TransitionType } from "@/lib/types";
 import { formatMs } from "@/lib/format";
 import { StatusBadge } from "./StatusBadge";
+import { useAuthStore } from "@/lib/authStore";
+import { uploadSeedImage } from "@/lib/supabase/storage";
 
 const TRANSITIONS: { value: TransitionType; label: string }[] = [
   { value: "none", label: "なし（カット）" },
@@ -42,28 +44,54 @@ export function SceneInspector({
 }) {
   const [retaking, setRetaking] = useState(false);
   const [imgError, setImgError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const authUser = useAuthStore((s) => s.user);
+  const authConfigured = useAuthStore((s) => s.configured);
 
   const busy =
     scene.videoStatus === "generating" || scene.audioStatus === "generating";
 
-  /** 選択画像を data URL に変換して起点画像に設定する。 */
-  function handleFile(file: File | undefined) {
+  function readAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * 起点画像を設定する。
+   * ログイン済み（Supabase 設定済み）なら Storage にアップロードして署名付きURLを、
+   * そうでなければ data URL をシーンに保持する。
+   */
+  async function handleFile(file: File | undefined) {
     setImgError(null);
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setImgError("画像ファイルを選んでください");
       return;
     }
-    // data URL でシーンに保持するため、サイズは控えめに制限（~4MB）。
     if (file.size > 4 * 1024 * 1024) {
       setImgError("画像サイズは 4MB 以下にしてください");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => onUpdate({ seedImage: String(reader.result) });
-    reader.onerror = () => setImgError("画像の読み込みに失敗しました");
-    reader.readAsDataURL(file);
+
+    setUploading(true);
+    try {
+      if (authConfigured && authUser) {
+        const url = await uploadSeedImage(authUser.id, file);
+        onUpdate({ seedImage: url });
+      } else {
+        onUpdate({ seedImage: await readAsDataUrl(file) });
+      }
+    } catch (e) {
+      setImgError(e instanceof Error ? e.message : "アップロードに失敗しました");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleRetake() {
@@ -182,10 +210,16 @@ export function SceneInspector({
         ) : (
           <button
             type="button"
+            disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-ink-600 px-3 py-3 text-xs text-gray-400 hover:border-accent hover:text-gray-200"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-ink-600 px-3 py-3 text-xs text-gray-400 transition enabled:hover:border-accent enabled:hover:text-gray-200 disabled:opacity-50"
           >
-            <ImagePlus size={15} /> 画像を追加（任意）
+            {uploading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <ImagePlus size={15} />
+            )}
+            {uploading ? "アップロード中…" : "画像を追加（任意）"}
           </button>
         )}
         {imgError && <span className="text-[11px] text-red-400">{imgError}</span>}

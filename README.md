@@ -44,6 +44,24 @@ npm run build    # lint + 型チェック + バンドル
 npm start        # 本番サーバー
 ```
 
+## Supabase（認証 / DB / Storage・RLS, 要件 4）
+
+未設定でもアプリは端末内（localStorage / data URL）で動作します。設定すると
+ログイン・プロジェクトのクラウド保存・起点画像の Storage 保存が有効になります。
+
+1. Supabase でプロジェクトを作成。
+2. SQL Editor で [supabase/schema.sql](supabase/schema.sql) を実行
+   （`projects` テーブル・RLS・`media` バケットとポリシーを作成）。
+3. Project Settings → API の URL と anon キーを `.env` に設定:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
+4. アプリの「設定 → アカウント」からログイン。`/projects` で保存・読み込み・削除。
+
+RLS により各ユーザーは自分の行（`projects`）と自分のフォルダ（`media/{userId}/…`）
+のみアクセスできます。メディアは非公開バケットに保存し、署名付きURLで一時取得します。
+
 ## デプロイ（Vercel 想定）
 
 1. Vercel に本リポジトリを import する。
@@ -73,17 +91,20 @@ npm start        # 本番サーバー
 | 3.3 ミリ秒単位トリミング | `SceneInspector` の尺スライダー |
 | 3.3 字幕の直接修正 | `SceneInspector` の字幕テキストエリア |
 | 3.3 部分再生成（リテイク） | シーン単位のプロンプト書き換え + 作り直し |
+| 4 認証 / DB / Storage・RLS | Supabase（`/login`・`/projects`・起点画像の Storage 保存） |
 
 ## 技術スタック
 
 - Next.js 15 (App Router, server) / React 19 / TypeScript
 - Remotion 4（動画結合をコードで記述・レンダリング）
+- Supabase（Auth / Postgres / Storage・RLS）
 - Tailwind CSS / lucide-react / Zustand / @dnd-kit
 
 ## 今後（未実装）
 
-- Supabase 連携（Auth / DB / Storage・RLS）— 生成物の永続化と保護（要件 4）
-- 生成メディア（音声/動画）の Storage 保存と data URL からの脱却
+- 生成メディア（ナレーション音声 / 動画クリップ）の Storage 保存
+  （現状 Storage 連携は起点画像のみ。音声は data URL、動画は RunWay の URL のまま）
+- プロジェクトのクラウド自動同期（現状は `/projects` での明示保存・読み込み）
 - バックグラウンド Queue と Push 通知（要件 3.1）
 - Capacitor によるネイティブ化（要件 2）
 
