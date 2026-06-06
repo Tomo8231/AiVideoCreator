@@ -6,7 +6,7 @@ import { ArrowLeft, ShieldAlert, Check, Trash2 } from "lucide-react";
 import { ApiMode, useSettingsStore } from "@/lib/settingsStore";
 import { KeyField } from "@/components/KeyField";
 import { useAuthStore } from "@/lib/authStore";
-import { LogIn, LogOut, FolderOpen } from "lucide-react";
+import { LogIn, LogOut, FolderOpen, ExternalLink } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -76,9 +76,19 @@ export default function SettingsPage() {
 
       {/* API キー */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          API キー
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            API キー
+          </h2>
+          <a
+            href="/api-keys-guide.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-accent-soft hover:underline"
+          >
+            キーの取得方法 <ExternalLink size={12} />
+          </a>
+        </div>
 
         <KeyField
           label="ElevenLabs API キー（音声合成）"

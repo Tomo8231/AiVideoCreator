@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>APIキーの取得方法 — AIVideoCreator</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --panel2: #1b1b27;
+    --border: #272736;
+    --text: #e7e7ef;
+    --muted: #9aa0b4;
+    --accent: #7c5cff;
+    --accent-soft: #9d86ff;
+    --amber-bg: rgba(245, 158, 11, 0.1);
+    --amber-border: rgba(245, 158, 11, 0.3);
+    --amber-text: #fcd9a6;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 18px 64px; }
+  header.page { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px; flex: none;
+    background: rgba(124, 92, 255, 0.2); color: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  h2 {
+    font-size: 18px; margin: 36px 0 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent-soft); }
+  code {
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1px 6px; font-size: 13px;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    word-break: break-all;
+  }
+  ol, ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 18px; margin: 12px 0;
+  }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 999px; vertical-align: middle;
+    margin-left: 8px;
+  }
+  .badge.opt { background: var(--panel2); color: var(--muted); }
+  .badge.req { background: rgba(124, 92, 255, 0.2); color: var(--accent-soft); }
+  .env { color: var(--accent-soft); }
+  .note {
+    background: var(--amber-bg); border: 1px solid var(--amber-border);
+    color: var(--amber-text); border-radius: 12px; padding: 12px 14px;
+    font-size: 13px; margin: 14px 0;
+  }
+  .toc { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
+  .toc ul { list-style: none; padding-left: 0; margin: 6px 0 0; }
+  .toc li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .back { display: inline-block; margin-top: 28px; color: var(--muted); font-size: 13px; }
+  .pill { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="logo">🎬</div>
+    <div>
+      <h1>APIキーの取得方法</h1>
+      <p class="sub">AIVideoCreator で実際のAI生成・クラウド保存を使うための設定ガイド</p>
+    </div>
+  </header>
+
+  <div class="note">
+    <strong>キーは未設定でもアプリは動きます。</strong>
+    その場合は生成がモック（ダミー）になり、保存はこの端末内（localStorage）になります。
+    本物のAIで生成したいキーだけ設定すればOKです。
+  </div>
+
+  <div class="toc">
+    <strong>目次</strong>
+    <ul>
+      <li>① <a href="#how">キーの設定方法（2通り）</a></li>
+      <li>② <a href="#elevenlabs">ElevenLabs — ナレーション音声</a></li>
+      <li>③ <a href="#runway">RunWay — 動画生成</a></li>
+      <li>④ <a href="#anthropic">Anthropic — 台本のシーン分割</a></li>
+      <li>⑤ <a href="#supabase">Supabase — ログイン・クラウド保存</a></li>
+      <li>⑥ <a href="#security">セキュリティの注意</a></li>
+    </ul>
+  </div>
+
+  <h2 id="how">① キーの設定方法（2通り）</h2>
+  <p>取得したキーは、次のどちらかの方法で設定します。</p>
+  <table>
+    <tr><th>方法</th><th>手順</th><th>向いている用途</th></tr>
+    <tr>
+      <td><strong>設定画面</strong></td>
+      <td>アプリ右上の歯車 → 「APIキー」に貼り付け。ブラウザに保存され、生成時にサーバーへ送信。</td>
+      <td>手軽に試す。自分専用の端末。</td>
+    </tr>
+    <tr>
+      <td><strong>.env ファイル</strong></td>
+      <td>プロジェクト直下の <code>.env</code> にキーを記入してサーバーを再起動。</td>
+      <td>本番・共有環境（Vercel の環境変数も同じ考え方）。</td>
+    </tr>
+  </table>
+  <p class="pill">※ 設定できる項目の一覧は <code>.env.example</code> にもまとまっています。</p>
+
+  <h2 id="elevenlabs">② ElevenLabs <span class="badge opt">任意</span></h2>
+  <p>シーンごとの<strong>ナレーション音声</strong>を合成します。未設定ならモック音声（尺だけ推定）。</p>
+  <div class="panel">
+    <h3>取得手順</h3>
+    <ol>
+      <li><a href="https://elevenlabs.io/" target="_blank" rel="noopener">elevenlabs.io</a> で登録・ログイン。</li>
+      <li>右上のアカウントメニュー → <strong>API Keys</strong>（または Profile + API Key）。</li>
+      <li><strong>Create API Key</strong> でキーを発行し、コピー。</li>
+      <li>（任意）使いたい声の <strong>Voice ID</strong> を Voices 画面で確認。</li>
+    </ol>
+    <h3>設定する値</h3>
+    <ul>
+      <li><code class="env">ELEVENLABS_API_KEY</code> … 発行したキー</li>
+      <li><code class="env">ELEVENLABS_VOICE_ID</code> … 任意（未設定はデフォルトの声）</li>
+    </ul>
+  </div>
+
+  <h2 id="runway">③ RunWay <span class="badge opt">任意</span></h2>
+  <p>シーンの<strong>動画クリップ</strong>を生成します（RunwayML Developer API）。未設定ならモック動画。</p>
+  <div class="note">
+    RunWay の動画は <strong>「起点画像」から動かす（image_to_video）</strong>方式です。
+    エディタの各シーンで「起点画像」を添付するか、全シーン共通の既定画像
+    <code class="env">RUNWAY_DEFAULT_IMAGE</code> を設定してください。画像が無いと生成はエラーになります。
+  </div>
+  <div class="panel">
+    <h3>取得手順</h3>
+    <ol>
+      <li><a href="https://dev.runwayml.com/" target="_blank" rel="noopener">dev.runwayml.com</a>（Developer ポータル）にログイン。</li>
+      <li><strong>API Keys</strong> で新しいキーを発行し、コピー。</li>
+      <li>従量課金のためクレジット残高の登録が必要な場合があります。</li>
+    </ol>
+    <h3>設定する値</h3>
+    <ul>
+      <li><code class="env">RUNWAY_API_KEY</code> … 発行したキー</li>
+      <li><code class="env">RUNWAY_DEFAULT_IMAGE</code> … 任意。起点画像のURL（全シーン共通の既定）</li>
+      <li><code class="env">RUNWAY_POLL_INTERVAL_MS</code> / <code class="env">RUNWAY_POLL_TIMEOUT_MS</code> … 任意。ポーリング間隔・上限</li>
+    </ul>
+  </div>
+
+  <h2 id="anthropic">④ Anthropic <span class="badge opt">任意</span></h2>
+  <p>台本を <strong>Claude で意味的にシーン分割</strong>します。未設定なら簡易（ヒューリスティック）分割。</p>
+  <div class="panel">
+    <h3>取得手順</h3>
+    <ol>
+      <li><a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a> にログイン。</li>
+      <li>左メニュー <strong>API Keys</strong> → <strong>Create Key</strong> で発行し、コピー。</li>
+      <li>Billing でクレジットの登録が必要な場合があります。</li>
+    </ol>
+    <h3>設定する値</h3>
+    <ul>
+      <li><code class="env">ANTHROPIC_API_KEY</code> … 発行したキー</li>
+    </ul>
+  </div>
+
+  <h2 id="supabase">⑤ Supabase <span class="badge opt">任意</span></h2>
+  <p><strong>ログイン</strong>と<strong>プロジェクトのクラウド保存・起点画像の保存</strong>に使います。未設定なら端末内保存のまま。</p>
+  <div class="panel">
+    <h3>取得手順</h3>
+    <ol>
+      <li><a href="https://supabase.com/" target="_blank" rel="noopener">supabase.com</a> でプロジェクトを作成。</li>
+      <li><strong>SQL Editor</strong> を開き、リポジトリ同梱の <code>supabase/schema.sql</code> の内容を貼り付けて <strong>Run</strong>。
+        （<code>projects</code> テーブル・<code>media</code> バケット・RLS が作成されます）</li>
+      <li><strong>Project Settings → API</strong> で次の2つをコピー:
+        <ul>
+          <li><em>Project URL</em></li>
+          <li><em>Project API keys</em> の <strong>anon public</strong> キー</li>
+        </ul>
+      </li>
+    </ol>
+    <h3>設定する値（<code>.env</code> に記入）</h3>
+    <ul>
+      <li><code class="env">NEXT_PUBLIC_SUPABASE_URL</code> … Project URL</li>
+      <li><code class="env">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> … anon public キー</li>
+    </ul>
+    <p class="pill">
+      ※ これらは <code>NEXT_PUBLIC_</code> 接頭辞のため、設定後はサーバーの再起動（再ビルド）が必要です。
+      設定画面ではなく <code>.env</code> で設定してください。
+    </p>
+  </div>
+  <p>設定後、アプリの「設定 → アカウント」からログインし、<code>/projects</code> で保存・読み込みができます。
+     RLS により各ユーザーは自分のデータ（<code>projects</code> 行と <code>media/{userId}/</code> フォルダ）のみアクセスできます。</p>
+
+  <h2 id="security">⑥ セキュリティの注意</h2>
+  <ul>
+    <li>APIキーは<strong>秘密情報</strong>です。スクリーンショットやチャットで共有しないでください。</li>
+    <li><strong>設定画面</strong>に入れたキーはブラウザ（localStorage）に保存されます。<strong>共有端末では使わない</strong>でください。</li>
+    <li>より安全に運用するなら、キーは <code>.env</code>（またはホスティングの環境変数）に置き、設定画面は空のままにします。</li>
+    <li>キーが漏れた疑いがあるときは、各サービスの管理画面で<strong>失効（Revoke）</strong>して再発行してください。</li>
+  </ul>
+
+  <a class="back" href="javascript:history.back()">← アプリに戻る</a>
+
+</div>
+</body>
+</html>
