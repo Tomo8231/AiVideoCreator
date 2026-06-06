@@ -7,6 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { SAMPLE_SCRIPT } from "@/lib/sampleScript";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SeedImagePicker } from "@/components/SeedImagePicker";
 
 type Phase = "input" | "generating";
 
@@ -19,6 +20,7 @@ export default function HomePage() {
 
   const [title, setTitle] = useState("");
   const [script, setScript] = useState("");
+  const [seedImage, setSeedImage] = useState<string | undefined>(undefined);
   const [phase, setPhase] = useState<Phase>("input");
   const [splitting, setSplitting] = useState(false);
 
@@ -28,7 +30,7 @@ export default function HomePage() {
     if (!script.trim() || splitting) return;
     setSplitting(true);
     try {
-      await createProjectFromScript(title, script);
+      await createProjectFromScript(title, script, seedImage);
     } finally {
       setSplitting(false);
     }
@@ -41,6 +43,7 @@ export default function HomePage() {
     setPhase("input");
     setTitle("");
     setScript("");
+    setSeedImage(undefined);
   }
 
   return (
@@ -68,9 +71,11 @@ export default function HomePage() {
         <InputPhase
           title={title}
           script={script}
+          seedImage={seedImage}
           busy={splitting}
           onTitle={setTitle}
           onScript={setScript}
+          onSeedImage={setSeedImage}
           onUseSample={() => setScript(SAMPLE_SCRIPT)}
           onGenerate={handleGenerate}
         />
@@ -90,17 +95,21 @@ export default function HomePage() {
 function InputPhase({
   title,
   script,
+  seedImage,
   busy,
   onTitle,
   onScript,
+  onSeedImage,
   onUseSample,
   onGenerate,
 }: {
   title: string;
   script: string;
+  seedImage: string | undefined;
   busy: boolean;
   onTitle: (v: string) => void;
   onScript: (v: string) => void;
+  onSeedImage: (url: string | undefined) => void;
   onUseSample: () => void;
   onGenerate: () => void;
 }) {
@@ -137,6 +146,18 @@ function InputPhase({
         />
         <span className="self-end text-[11px] text-gray-500">{charCount} 文字</span>
       </label>
+
+      {/* 起点画像（全シーン共通・任意）。RunWay の動画生成は画像が起点。 */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-gray-300">
+          起点画像（任意・全シーン共通）
+        </span>
+        <SeedImagePicker
+          value={seedImage}
+          onChange={onSeedImage}
+          hint="RunWay で実際に動画生成するには画像が必要です。ここで指定すると全シーンの初期画像になります（シーンごとの差し替えは編集画面で）。モック生成では不要。"
+        />
+      </div>
 
       <button
         type="button"

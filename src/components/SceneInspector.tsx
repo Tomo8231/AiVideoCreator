@@ -1,20 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  RefreshCw,
-  Trash2,
-  Scissors,
-  Loader2,
-  ImagePlus,
-  X,
-  AlertTriangle,
-} from "lucide-react";
+import { useState } from "react";
+import { RefreshCw, Trash2, Scissors, Loader2, AlertTriangle } from "lucide-react";
 import { Scene, TransitionType } from "@/lib/types";
 import { formatMs } from "@/lib/format";
 import { StatusBadge } from "./StatusBadge";
-import { useAuthStore } from "@/lib/authStore";
-import { uploadSeedImage } from "@/lib/supabase/storage";
+import { SeedImagePicker } from "./SeedImagePicker";
 
 const TRANSITIONS: { value: TransitionType; label: string }[] = [
   { value: "none", label: "なし（カット）" },
@@ -44,56 +35,9 @@ export function SceneInspector({
   onRemove: () => void;
 }) {
   const [retaking, setRetaking] = useState(false);
-  const [imgError, setImgError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const authUser = useAuthStore((s) => s.user);
-  const authConfigured = useAuthStore((s) => s.configured);
 
   const busy =
     scene.videoStatus === "generating" || scene.audioStatus === "generating";
-
-  function readAsDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /**
-   * 起点画像を設定する。
-   * ログイン済み（Supabase 設定済み）なら Storage にアップロードして署名付きURLを、
-   * そうでなければ data URL をシーンに保持する。
-   */
-  async function handleFile(file: File | undefined) {
-    setImgError(null);
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setImgError("画像ファイルを選んでください");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setImgError("画像サイズは 4MB 以下にしてください");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      if (authConfigured && authUser) {
-        const url = await uploadSeedImage(authUser.id, file);
-        onUpdate({ seedImage: url });
-      } else {
-        onUpdate({ seedImage: await readAsDataUrl(file) });
-      }
-    } catch (e) {
-      setImgError(e instanceof Error ? e.message : "アップロードに失敗しました");
-    } finally {
-      setUploading(false);
-    }
-  }
 
   async function handleRetake() {
     setRetaking(true);
@@ -194,58 +138,11 @@ export function SceneInspector({
         <span className="text-xs font-medium text-gray-400">
           起点画像（動画生成のもとになる画像）
         </span>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0])}
+        <SeedImagePicker
+          value={scene.seedImage}
+          onChange={(url) => onUpdate({ seedImage: url })}
+          hint="RunWay の動画生成は画像が起点です。未添付でもモック生成は動作します。差し替え後は「このシーンを作り直す」で反映。"
         />
-        {scene.seedImage ? (
-          <div className="flex items-center gap-3">
-            {/* data URL を表示するため next/image ではなく img を使用 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={scene.seedImage}
-              alt="起点画像"
-              className="h-16 w-16 rounded-lg border border-ink-700 object-cover"
-            />
-            <div className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="self-start rounded-lg border border-ink-700 px-2.5 py-1.5 text-xs text-gray-300 hover:border-ink-600"
-              >
-                差し替え
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdate({ seedImage: undefined })}
-                className="inline-flex items-center gap-1 self-start text-xs text-red-400 hover:text-red-300"
-              >
-                <X size={12} /> 削除
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-ink-600 px-3 py-3 text-xs text-gray-400 transition enabled:hover:border-accent enabled:hover:text-gray-200 disabled:opacity-50"
-          >
-            {uploading ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <ImagePlus size={15} />
-            )}
-            {uploading ? "アップロード中…" : "画像を追加（任意）"}
-          </button>
-        )}
-        {imgError && <span className="text-[11px] text-red-400">{imgError}</span>}
-        <span className="text-[11px] leading-relaxed text-gray-500">
-          RunWay の動画生成は画像が起点です。未添付でもモック生成は動作します。
-        </span>
       </div>
 
       {/* 部分再生成（リテイク） */}
