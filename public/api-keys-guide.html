@@ -90,7 +90,11 @@
   <div class="note">
     <strong>キーは未設定でもアプリは動きます。</strong>
     その場合は生成がモック（ダミー）になり、保存はこの端末内（localStorage）になります。
-    本物のAIで生成したいキーだけ設定すればOKです。
+    本物のAIで生成したいキーだけ設定すればOKです。<br />
+    まず無料で全機能（台本分割・タイムライン編集・字幕・結合）を試すなら、アプリの
+    <strong>設定 → 生成モード → モック</strong> を選んでください。<br />
+    <strong>実APIの多くはクレジット購入や有料プランが前提です</strong>（RunWay はクレジット、
+    ElevenLabs の API 音声は有料プランが必要なことがあります）。各節の「よくあるエラー」を参照。
   </div>
 
   <div class="toc">
@@ -137,6 +141,19 @@
       <li><code class="env">ELEVENLABS_API_KEY</code> … 発行したキー</li>
       <li><code class="env">ELEVENLABS_VOICE_ID</code> … 任意（未設定はデフォルトの声）</li>
     </ul>
+    <h3>よくあるエラー</h3>
+    <ul>
+      <li><code>402: paid_plan_required / Free users cannot use library voices</code> …
+        <strong>無料プランは API からライブラリ音声（Rachel 等のプリメイド音声）を使えません。</strong>
+        次のいずれかで解決します:
+        <ul>
+          <li>有料プラン（Starter 以上）にアップグレードする。</li>
+          <li>自分のアカウントの音声（My Voices / 自作・クローン音声）の <strong>Voice ID</strong> を
+            <code class="env">ELEVENLABS_VOICE_ID</code> に設定する。</li>
+        </ul>
+      </li>
+      <li><code>401: invalid_api_key</code> … キーの打ち間違い・失効。再発行して設定し直す。</li>
+    </ul>
   </div>
 
   <h2 id="runway">③ RunWay <span class="badge opt">任意</span></h2>
@@ -158,6 +175,14 @@
       <li><code class="env">RUNWAY_API_KEY</code> … 発行したキー</li>
       <li><code class="env">RUNWAY_DEFAULT_IMAGE</code> … 任意。起点画像のURL（全シーン共通の既定）</li>
       <li><code class="env">RUNWAY_POLL_INTERVAL_MS</code> / <code class="env">RUNWAY_POLL_TIMEOUT_MS</code> … 任意。ポーリング間隔・上限</li>
+    </ul>
+    <h3>よくあるエラー</h3>
+    <ul>
+      <li><code>400: not enough credits</code>（クレジット不足）… RunWay は従量課金です。
+        ダッシュボードの <strong>Billing / Credits</strong> でクレジットを購入してください。
+        無料枠だけでは API からの動画生成はできないことがあります。</li>
+      <li><code>起点画像が必要です</code> … シーンに画像を添付するか
+        <code class="env">RUNWAY_DEFAULT_IMAGE</code> を設定してください。</li>
     </ul>
   </div>
 
