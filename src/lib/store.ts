@@ -7,9 +7,45 @@
  */
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { Project, Scene } from "./types";
 import { uid } from "./sceneSplit";
+
+/**
+ * localStorage 永続化用にプロジェクトを軽量化する。
+ * 起点画像が data URL（最大4MB）のままだと容量制限(約5MB)を超えて
+ * QuotaExceededError になるため、data URL の画像は保存対象から外す。
+ * Supabase の署名付きURL（短い）はそのまま保存される。
+ */
+function stripHeavyForPersist(project: Project): Project {
+  return {
+    ...project,
+    scenes: project.scenes.map((s) =>
+      s.seedImage?.startsWith("data:") ? { ...s, seedImage: undefined } : s
+    ),
+  };
+}
+
+/** setItem が容量超過で投げてもアプリを落とさない安全なストレージ。 */
+const safeStorage = createJSONStorage(() => ({
+  getItem: (name: string) =>
+    typeof window !== "undefined" ? window.localStorage.getItem(name) : null,
+  setItem: (name: string, value: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(name, value);
+    } catch (e) {
+      // 容量超過など。永続化を諦めるだけで、セッション中の動作は継続する。
+      console.warn(
+        "プロジェクトの自動保存に失敗しました（localStorage 容量超過の可能性）。",
+        e
+      );
+    }
+  },
+  removeItem: (name: string) => {
+    if (typeof window !== "undefined") window.localStorage.removeItem(name);
+  },
+}));
 import { requestAudio, requestSplit, requestVideo } from "./aiService";
 
 interface AppState {
@@ -190,6 +226,11 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "aivideocreator-project",
+      storage: safeStorage,
+      // data URL 画像など重いデータは保存しない（容量超過の回避）。
+      partialize: (state) => ({
+        project: state.project ? stripHeavyForPersist(state.project) : null,
+      }),
       // SSR/静的書き出し時に window が無いため、storage アクセスはクライアントのみ。
       skipHydration: false,
     }
