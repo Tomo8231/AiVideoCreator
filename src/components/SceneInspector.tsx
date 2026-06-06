@@ -8,6 +8,7 @@ import {
   Loader2,
   ImagePlus,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { Scene, TransitionType } from "@/lib/types";
 import { formatMs } from "@/lib/format";
@@ -112,6 +113,25 @@ export function SceneInspector({
           <StatusBadge status={scene.audioStatus} label="音声" />
         </div>
       </div>
+
+      {/* 生成エラーの表示 */}
+      {(scene.videoError || scene.audioError) && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-red-300">
+            <AlertTriangle size={13} /> 生成に失敗しました
+          </div>
+          {scene.videoError && (
+            <p className="text-[11px] leading-relaxed text-red-300/90">
+              <span className="font-medium">映像:</span> {scene.videoError}
+            </p>
+          )}
+          {scene.audioError && (
+            <p className="text-[11px] leading-relaxed text-red-300/90">
+              <span className="font-medium">音声:</span> {scene.audioError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 字幕修正 */}
       <label className="flex flex-col gap-1.5">

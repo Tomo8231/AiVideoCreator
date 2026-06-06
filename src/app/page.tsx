@@ -195,21 +195,29 @@ function GeneratingPhase({
           {scenes.map((scene) => (
             <li
               key={scene.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-ink-800 px-3 py-2"
+              className="flex flex-col gap-1.5 rounded-lg bg-ink-800 px-3 py-2"
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className="h-7 w-7 shrink-0 rounded-md"
-                  style={{ background: scene.previewColor }}
-                />
-                <span className="truncate text-xs text-gray-300">
-                  #{scene.order + 1} {scene.scriptText}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-7 w-7 shrink-0 rounded-md"
+                    style={{ background: scene.previewColor }}
+                  />
+                  <span className="truncate text-xs text-gray-300">
+                    #{scene.order + 1} {scene.scriptText}
+                  </span>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <StatusBadge status={scene.videoStatus} label="映像" />
+                  <StatusBadge status={scene.audioStatus} label="音声" />
+                </div>
               </div>
-              <div className="flex shrink-0 gap-1">
-                <StatusBadge status={scene.videoStatus} label="映像" />
-                <StatusBadge status={scene.audioStatus} label="音声" />
-              </div>
+              {(scene.videoError || scene.audioError) && (
+                <div className="rounded-md bg-red-500/10 px-2 py-1.5 text-[11px] leading-relaxed text-red-300/90">
+                  {scene.videoError && <p>映像: {scene.videoError}</p>}
+                  {scene.audioError && <p>音声: {scene.audioError}</p>}
+                </div>
+              )}
             </li>
           ))}
         </ul>

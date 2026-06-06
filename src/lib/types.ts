@@ -44,6 +44,11 @@ export interface Scene {
   /** 音声（ナレーション）生成ジョブの状態。 */
   audioStatus: GenerationStatus;
 
+  /** 動画生成が失敗したときのエラーメッセージ（成功時は undefined）。 */
+  videoError?: string;
+  /** 音声生成が失敗したときのエラーメッセージ（成功時は undefined）。 */
+  audioError?: string;
+
   /** モック上のプレビュー色（実装では生成動画のサムネ/動画URLに置き換わる）。 */
   previewColor: string;
 

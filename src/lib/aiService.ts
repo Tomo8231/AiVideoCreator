@@ -63,25 +63,31 @@ export async function requestSplit(script: string): Promise<Scene[]> {
   return splitScriptIntoScenes(script);
 }
 
-/** シーンの動画クリップを生成（成否のみ返す）。 */
-export async function requestVideo(scene: Scene): Promise<{ ok: boolean }> {
+/** 生成結果（成否と、失敗時のエラーメッセージ）。 */
+export interface GenOutcome {
+  ok: boolean;
+  error?: string;
+}
+
+/** シーンの動画クリップを生成。失敗時はエラーメッセージを返す。 */
+export async function requestVideo(scene: Scene): Promise<GenOutcome> {
   if (isServerMode()) {
     const r = await postGenerate("/api/generate/video", {
       prompt: scene.videoPrompt,
       promptImage: scene.seedImage,
     });
-    if (r) return { ok: r.ok };
+    if (r) return { ok: r.ok, error: r.ok ? undefined : r.error };
   }
   return mockVideo(scene);
 }
 
-/** シーンのナレーション音声を生成（成否のみ返す）。 */
-export async function requestAudio(scene: Scene): Promise<{ ok: boolean }> {
+/** シーンのナレーション音声を生成。失敗時はエラーメッセージを返す。 */
+export async function requestAudio(scene: Scene): Promise<GenOutcome> {
   if (isServerMode()) {
     const r = await postGenerate("/api/generate/audio", {
       text: scene.subtitle,
     });
-    if (r) return { ok: r.ok };
+    if (r) return { ok: r.ok, error: r.ok ? undefined : r.error };
   }
   return mockAudio(scene);
 }
@@ -113,9 +119,23 @@ async function postGenerate(
       headers: buildHeaders(),
       body: JSON.stringify(payload),
     });
-    if (!res.ok) return { ok: false, provider: "server", mock: false };
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      return {
+        ok: false,
+        provider: "server",
+        mock: false,
+        error: `サーバーエラー (${res.status})${detail ? `: ${detail.slice(0, 300)}` : ""}`,
+      };
+    }
     return (await res.json()) as GenerationResult;
-  } catch {
-    return null; // 呼び出し側でクライアントモックへ縮退。
+  } catch (e) {
+    // ネットワーク不通など。呼び出し側でクライアントモックへ縮退する。
+    return {
+      ok: false,
+      provider: "server",
+      mock: false,
+      error: e instanceof Error ? `通信に失敗しました: ${e.message}` : "通信に失敗しました",
+    };
   }
 }

@@ -70,7 +70,7 @@ export const useAppStore = create<AppState>()(
         const project = get().project;
         if (!project) return;
 
-        // 全シーンを generating に。
+        // 全シーンを generating に。前回のエラーはクリアする。
         set({
           project: {
             ...project,
@@ -78,6 +78,8 @@ export const useAppStore = create<AppState>()(
               ...s,
               videoStatus: "generating",
               audioStatus: "generating",
+              videoError: undefined,
+              audioError: undefined,
             })),
           },
         });
@@ -88,11 +90,13 @@ export const useAppStore = create<AppState>()(
             requestVideo(scene).then((r) =>
               get().updateScene(scene.id, {
                 videoStatus: r.ok ? "ready" : "failed",
+                videoError: r.ok ? undefined : r.error,
               })
             ),
             requestAudio(scene).then((r) =>
               get().updateScene(scene.id, {
                 audioStatus: r.ok ? "ready" : "failed",
+                audioError: r.ok ? undefined : r.error,
               })
             ),
           ])
@@ -107,7 +111,13 @@ export const useAppStore = create<AppState>()(
         if (!current) return;
 
         const prompt = newPrompt ?? current.videoPrompt;
-        apply({ videoPrompt: prompt, videoStatus: "generating", audioStatus: "generating" });
+        apply({
+          videoPrompt: prompt,
+          videoStatus: "generating",
+          audioStatus: "generating",
+          videoError: undefined,
+          audioError: undefined,
+        });
 
         const target: Scene = { ...current, videoPrompt: prompt };
         const [v, a] = await Promise.all([
@@ -116,7 +126,9 @@ export const useAppStore = create<AppState>()(
         ]);
         apply({
           videoStatus: v.ok ? "ready" : "failed",
+          videoError: v.ok ? undefined : v.error,
           audioStatus: a.ok ? "ready" : "failed",
+          audioError: a.ok ? undefined : a.error,
         });
       },
 
