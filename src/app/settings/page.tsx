@@ -6,7 +6,8 @@ import { ArrowLeft, ShieldAlert, Check, Trash2 } from "lucide-react";
 import { ApiMode, useSettingsStore } from "@/lib/settingsStore";
 import { KeyField } from "@/components/KeyField";
 import { useAuthStore } from "@/lib/authStore";
-import { LogIn, LogOut, FolderOpen, ExternalLink } from "lucide-react";
+import { useThemeStore, Theme } from "@/lib/themeStore";
+import { LogIn, LogOut, FolderOpen, ExternalLink, Moon, Sun } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -37,6 +38,9 @@ export default function SettingsPage() {
         </button>
         <h1 className="ml-1 text-lg font-bold">設定</h1>
       </header>
+
+      {/* 外観（テーマ） */}
+      <AppearanceSection />
 
       {/* アカウント（Supabase） */}
       <AccountSection />
@@ -153,6 +157,44 @@ export default function SettingsPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+/** 外観（ダーク/ライト）の切り替え。 */
+function AppearanceSection() {
+  const theme = useThemeStore((s) => s.theme);
+  const setTheme = useThemeStore((s) => s.setTheme);
+  const sync = useThemeStore((s) => s.sync);
+  useEffect(() => sync(), [sync]);
+
+  const options: { value: Theme; label: string; icon: React.ReactNode }[] = [
+    { value: "dark", label: "ダーク", icon: <Moon size={15} /> },
+    { value: "light", label: "ライト", icon: <Sun size={15} /> },
+  ];
+
+  return (
+    <section className="mb-5">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        外観
+      </h2>
+      <div className="flex gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setTheme(opt.value)}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition ${
+              theme === opt.value
+                ? "border-accent bg-ink-800"
+                : "border-ink-700 bg-ink-900 hover:border-ink-600"
+            }`}
+          >
+            {opt.icon}
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 

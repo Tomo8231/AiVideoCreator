@@ -6,6 +6,7 @@ import { Clapperboard, Sparkles, FileText, Loader2, Settings } from "lucide-reac
 import { useAppStore } from "@/lib/store";
 import { SAMPLE_SCRIPT } from "@/lib/sampleScript";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Phase = "input" | "generating";
 
@@ -52,6 +53,7 @@ export default function HomePage() {
           <h1 className="text-lg font-bold leading-tight">AIVideoCreator</h1>
           <p className="text-xs text-gray-400">台本から、AIが動画を生成・結合</p>
         </div>
+        <ThemeToggle />
         <button
           type="button"
           onClick={() => router.push("/settings")}

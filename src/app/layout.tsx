@@ -15,6 +15,12 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0f",
 };
 
+/**
+ * ハイドレーション前にテーマを適用してちらつきを防ぐ。
+ * localStorage の値を data-theme と color-scheme に反映する（既定はダーク）。
+ */
+const themeInitScript = `(function(){try{var t=localStorage.getItem('aivideocreator-theme')||'dark';var d=document.documentElement;d.dataset.theme=t;d.style.colorScheme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -23,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="min-h-screen antialiased">
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <AuthInit />
         {children}
       </body>

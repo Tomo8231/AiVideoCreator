@@ -110,7 +110,7 @@ export default function EditorPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-8 pt-4">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-8 pt-4 lg:max-w-6xl">
       {/* ヘッダー */}
       <header className="mb-4 flex items-center justify-between">
         <button
@@ -146,50 +146,60 @@ export default function EditorPage() {
         </div>
       </header>
 
-      {/* プレビュー */}
-      <VideoPreview project={project} currentMs={currentMs} onSeek={setCurrentMs} />
-
-      {/* タイムライン */}
-      <section className="mt-5">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          タイムライン（ドラッグで並び替え）
-        </h2>
-        <Timeline
-          scenes={project.scenes}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onReorder={reorderScenes}
-        />
-      </section>
-
-      {/* 音声設定 */}
-      <section className="mt-4">
-        <AudioSettings
-          bgmEnabled={project.bgmEnabled}
-          duckingAmount={project.duckingAmount}
-          onBgmChange={setBgmEnabled}
-          onDuckingChange={setDuckingAmount}
-        />
-      </section>
-
-      {/* 選択シーンの編集 */}
-      <section className="mt-4 rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
-        {selectedScene ? (
-          <SceneInspector
-            scene={selectedScene}
-            onUpdate={(patch) => updateScene(selectedScene.id, patch)}
-            onRetake={(prompt) => retakeScene(selectedScene.id, prompt)}
-            onRemove={() => {
-              removeScene(selectedScene.id);
-              setSelectedId(null);
-            }}
+      {/* 広い画面では 左:プレビュー / 右:編集 の2カラム。モバイルは縦積み。 */}
+      <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        {/* 左: プレビュー（デスクトップでは追従） */}
+        <div className="lg:sticky lg:top-4">
+          <VideoPreview
+            project={project}
+            currentMs={currentMs}
+            onSeek={setCurrentMs}
           />
-        ) : (
-          <p className="text-center text-xs text-gray-500">
-            タイムラインからシーンを選択して編集します。
-          </p>
-        )}
-      </section>
+        </div>
+
+        {/* 右: 編集エリア */}
+        <div className="mt-5 flex flex-col gap-4 lg:mt-0">
+          {/* タイムライン */}
+          <section>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              タイムライン（ドラッグで並び替え）
+            </h2>
+            <Timeline
+              scenes={project.scenes}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onReorder={reorderScenes}
+            />
+          </section>
+
+          {/* 音声設定 */}
+          <AudioSettings
+            bgmEnabled={project.bgmEnabled}
+            duckingAmount={project.duckingAmount}
+            onBgmChange={setBgmEnabled}
+            onDuckingChange={setDuckingAmount}
+          />
+
+          {/* 選択シーンの編集 */}
+          <section className="rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
+            {selectedScene ? (
+              <SceneInspector
+                scene={selectedScene}
+                onUpdate={(patch) => updateScene(selectedScene.id, patch)}
+                onRetake={(prompt) => retakeScene(selectedScene.id, prompt)}
+                onRemove={() => {
+                  removeScene(selectedScene.id);
+                  setSelectedId(null);
+                }}
+              />
+            ) : (
+              <p className="text-center text-xs text-gray-500">
+                タイムラインからシーンを選択して編集します。
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
     </main>
   );
 }
