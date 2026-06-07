@@ -133,7 +133,10 @@ async function generateWithComfyUI(
   opts: VideoOptions
 ): Promise<GenerationResult> {
   const baseUrl = opts.comfyUiUrl || process.env.COMFYUI_BASE_URL;
-  const workflowJson = opts.comfyUiWorkflow || process.env.COMFYUI_WORKFLOW;
+  const workflowJson =
+    opts.comfyUiWorkflow ||
+    process.env.COMFYUI_WORKFLOW ||
+    (await readWorkflowFile());
   if (!baseUrl) {
     return {
       ok: false,
@@ -171,6 +174,18 @@ async function generateWithComfyUI(
           ? e.message
           : "ComfyUI 生成に失敗しました";
     return { ok: false, provider: "comfyui", mock: false, error: msg };
+  }
+}
+
+/** COMFYUI_WORKFLOW_PATH が指す JSON ファイルを読む（無ければ undefined）。 */
+async function readWorkflowFile(): Promise<string | undefined> {
+  const p = process.env.COMFYUI_WORKFLOW_PATH;
+  if (!p) return undefined;
+  try {
+    const { readFile } = await import("node:fs/promises");
+    return await readFile(p, "utf-8");
+  } catch {
+    return undefined;
   }
 }
 
