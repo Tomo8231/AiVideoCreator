@@ -45,6 +45,29 @@ function normalizeBase(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+/**
+ * ComfyUI 向け fetch。接続失敗（未起動・URL/ポート違い等）を、原因が分かる
+ * メッセージに変換する（Node の素の "fetch failed" を避ける）。
+ */
+async function comfyFetch(
+  url: string,
+  init?: RequestInit
+): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    const cause =
+      e instanceof Error && e.cause instanceof Error
+        ? e.cause.message
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    throw new ComfyUIError(
+      `ComfyUI に接続できません（${url}）。ComfyUI が起動しているか、URL/ポートが正しいか確認してください。原因: ${cause}`
+    );
+  }
+}
+
 /** ワークフローを実行し、生成物の view URL を返す。 */
 export async function runWorkflow(p: ComfyRunParams): Promise<ComfyRunResult> {
   const base = normalizeBase(p.baseUrl);
@@ -100,7 +123,7 @@ async function uploadImage(
   form.append("image", blob, `seed_${Date.now()}.png`);
   form.append("overwrite", "true");
 
-  const res = await fetch(`${base}/upload/image`, {
+  const res = await comfyFetch(`${base}/upload/image`, {
     method: "POST",
     body: form,
     signal,
@@ -127,7 +150,16 @@ async function toBlob(image: string): Promise<Blob> {
     return new Blob([bytes], { type: mime });
   }
   // http(s) URL（Supabase 署名付きURL等）はサーバーから取得して再アップロード。
-  const res = await fetch(image);
+  let res: Response;
+  try {
+    res = await fetch(image);
+  } catch (e) {
+    throw new ComfyUIError(
+      `起点画像の取得に失敗しました（URL: ${image.slice(0, 80)}…）。原因: ${
+        e instanceof Error ? e.message : String(e)
+      }`
+    );
+  }
   if (!res.ok) throw new ComfyUIError(`起点画像の取得に失敗 (${res.status})`);
   const buf = Buffer.from(await res.arrayBuffer());
   const type = res.headers.get("content-type") || "image/png";
@@ -139,7 +171,7 @@ async function submitPrompt(
   workflow: Workflow,
   signal?: AbortSignal
 ): Promise<string> {
-  const res = await fetch(`${base}/prompt`, {
+  const res = await comfyFetch(`${base}/prompt`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: workflow }),
@@ -175,9 +207,10 @@ async function pollHistory(
 ): Promise<Record<string, unknown>> {
   const deadline = Date.now() + opts.timeoutMs;
   for (;;) {
-    const res = await fetch(`${base}/history/${encodeURIComponent(promptId)}`, {
-      signal: opts.signal,
-    });
+    const res = await comfyFetch(
+      `${base}/history/${encodeURIComponent(promptId)}`,
+      { signal: opts.signal }
+    );
     if (res.ok) {
       const hist = (await res.json()) as Record<
         string,
