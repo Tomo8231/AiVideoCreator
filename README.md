@@ -96,6 +96,7 @@ RLS により各ユーザーは自分の行（`projects`）と自分のフォル
 | 3.1 台本の自動シーン分割 | `/api/scenes/split`（Claude or ヒューリスティック） |
 | 3.1 マルチモーダル並列生成 + 進捗 | `/api/generate/{audio,video}` + 進捗UI |
 | 3.1 RunWay 動画ジョブのポーリング | `src/server/ai/runway.ts`（作成→`tasks/{id}`をポーリング→URL取得） |
+| 3.1 ローカル ComfyUI での動画生成 | `src/server/ai/comfyui.ts`（`/prompt`投入→`/history`→`/view`、無料・自前PC） |
 | 3.2 シームレス連結（ディゾルブ） | `src/remotion/VideoComposition.tsx` |
 | 3.2 BGM ダッキング | 結合 props に反映（音声設定パネル） |
 | 3.3 9:16 タイムラインプレビュー | `VideoPreview`（擬似再生・字幕オーバーレイ） |

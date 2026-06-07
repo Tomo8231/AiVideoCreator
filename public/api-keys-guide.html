@@ -102,7 +102,8 @@
     <ul>
       <li>① <a href="#how">キーの設定方法（2通り）</a></li>
       <li>② <a href="#elevenlabs">ElevenLabs — ナレーション音声</a></li>
-      <li>③ <a href="#runway">RunWay — 動画生成</a></li>
+      <li>③ <a href="#runway">RunWay — 動画生成（クラウド）</a></li>
+      <li>③-2 <a href="#comfyui">ComfyUI — 動画生成（ローカル・無料）</a></li>
       <li>④ <a href="#anthropic">Anthropic — 台本のシーン分割</a></li>
       <li>⑤ <a href="#supabase">Supabase — ログイン・クラウド保存</a></li>
       <li>⑥ <a href="#security">セキュリティの注意</a></li>
@@ -184,6 +185,40 @@
       <li><code>起点画像が必要です</code> … シーンに画像を添付するか
         <code class="env">RUNWAY_DEFAULT_IMAGE</code> を設定してください。</li>
     </ul>
+  </div>
+
+  <h2 id="comfyui">③-2 ComfyUI（ローカル動画生成） <span class="badge opt">任意・無料</span></h2>
+  <p>自分のPCで動く <strong>ComfyUI</strong> を使うと、課金なしで動画を生成できます。
+     RunWay の代わりにローカルで動かす選択肢です。</p>
+  <div class="note">
+    ローカルの ComfyUI に接続するため、<strong>このアプリも同じPCで起動</strong>してください
+    （サーバー側から <code>127.0.0.1:8188</code> へ接続します）。Vercel 等の外部にデプロイ
+    した場合は接続できません。
+  </div>
+  <div class="panel">
+    <h3>使い方</h3>
+    <ol>
+      <li>ComfyUI を起動（既定 <code>http://127.0.0.1:8188</code>）。動画生成系のワークフロー
+        （SVD / WAN / LTX / AnimateDiff など、導入済みのモデルに合わせて）を用意。</li>
+      <li>ComfyUI のメニュー <strong>Save (API Format)</strong> でワークフローJSONを書き出す。</li>
+      <li>JSON 内の差し込みたい箇所を、次のプレースホルダに置き換える:
+        <ul>
+          <li><code>%PROMPT%</code> … プロンプト（CLIPTextEncode の text など）</li>
+          <li><code>%IMAGE%</code> … 起点画像のファイル名（LoadImage の image など。画像は自動アップロードされます）</li>
+          <li><code>%SEED%</code> … 乱数 seed（毎回変えたい場合）</li>
+        </ul>
+      </li>
+      <li>アプリの <strong>設定 → 動画生成プロバイダ → ComfyUI</strong> を選び、URLと
+        ワークフローJSONを貼り付けて保存。</li>
+    </ol>
+    <h3>設定する値（env で常用する場合）</h3>
+    <ul>
+      <li><code class="env">COMFYUI_BASE_URL</code> … 例 <code>http://127.0.0.1:8188</code></li>
+      <li><code class="env">COMFYUI_WORKFLOW</code> … API形式JSON（長い場合は設定画面推奨）</li>
+      <li><code class="env">COMFYUI_POLL_INTERVAL_MS</code> / <code class="env">COMFYUI_POLL_TIMEOUT_MS</code> … 任意</li>
+    </ul>
+    <p class="pill">※ ワークフローはモデル/ノード構成ごとに異なります。お使いの環境で
+      単体で動くワークフローを書き出して使ってください。</p>
   </div>
 
   <h2 id="anthropic">④ Anthropic <span class="badge opt">任意</span></h2>

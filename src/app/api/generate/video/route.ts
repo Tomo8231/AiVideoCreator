@@ -17,9 +17,12 @@ export async function POST(req: Request) {
   }
 
   const result = await generateClip(body.prompt ?? "", {
+    provider: body.provider,
     apiKey: req.headers.get("x-runway-key") || undefined,
     promptImage: body.promptImage,
     durationSec: body.durationSec,
+    comfyUiUrl: body.comfyUiUrl,
+    comfyUiWorkflow: body.comfyUiWorkflow,
   });
   return NextResponse.json(result);
 }

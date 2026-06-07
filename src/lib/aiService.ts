@@ -72,9 +72,20 @@ export interface GenOutcome {
 /** シーンの動画クリップを生成。失敗時はエラーメッセージを返す。 */
 export async function requestVideo(scene: Scene): Promise<GenOutcome> {
   if (isServerMode()) {
+    const s = useSettingsStore.getState();
+    // ComfyUI のワークフローJSONは大きいのでヘッダではなくボディで送る。
+    const comfy =
+      s.videoProvider === "comfyui"
+        ? {
+            provider: "comfyui" as const,
+            comfyUiUrl: s.comfyUiUrl,
+            comfyUiWorkflow: s.comfyUiWorkflow,
+          }
+        : {};
     const r = await postGenerate("/api/generate/video", {
       prompt: scene.videoPrompt,
       promptImage: scene.seedImage,
+      ...comfy,
     });
     if (r) return { ok: r.ok, error: r.ok ? undefined : r.error };
   }

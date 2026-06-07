@@ -13,17 +13,26 @@ import {
   createImageToVideoTask,
   pollTask,
 } from "./runway";
+import { ComfyUIError, runWorkflow } from "./comfyui";
 
 const MOCK_CLIP_MS = 4000;
 const DEFAULT_DURATION_SEC = 5;
 
+export type VideoProvider = "runway" | "comfyui";
+
 export interface VideoOptions {
+  /** 使用するプロバイダ。未指定なら env から推定（既定は runway）。 */
+  provider?: VideoProvider;
   apiKey?: string;
   /** image_to_video の起点画像（URL/data URI）。未指定なら env のデフォルトを使う。 */
   promptImage?: string;
   durationSec?: number;
   /** "768:1280"（縦）など。 */
   ratio?: string;
+  /** ComfyUI のベースURL（例: http://127.0.0.1:8188）。 */
+  comfyUiUrl?: string;
+  /** ComfyUI の API 形式ワークフローJSON。 */
+  comfyUiWorkflow?: string;
   signal?: AbortSignal;
 }
 
@@ -39,6 +48,14 @@ export async function generateClip(
       mock: true,
       error: "プロンプトが短すぎます（8文字以上）",
     };
+  }
+
+  // プロバイダ決定: 明示指定 > env(COMFYUI) > runway。
+  const provider: VideoProvider =
+    opts.provider ?? (process.env.COMFYUI_BASE_URL ? "comfyui" : "runway");
+
+  if (provider === "comfyui") {
+    return generateWithComfyUI(clean, opts);
   }
 
   const apiKey = opts.apiKey || process.env.RUNWAY_API_KEY;
@@ -107,6 +124,53 @@ export async function generateClip(
           ? e.message
           : "RunWay 生成に失敗しました";
     return { ok: false, provider: "runway", mock: false, error: msg };
+  }
+}
+
+/** ローカル ComfyUI で動画を生成する。 */
+async function generateWithComfyUI(
+  prompt: string,
+  opts: VideoOptions
+): Promise<GenerationResult> {
+  const baseUrl = opts.comfyUiUrl || process.env.COMFYUI_BASE_URL;
+  const workflowJson = opts.comfyUiWorkflow || process.env.COMFYUI_WORKFLOW;
+  if (!baseUrl) {
+    return {
+      ok: false,
+      provider: "comfyui",
+      mock: false,
+      error: "ComfyUI のURLが未設定です（例: http://127.0.0.1:8188）",
+    };
+  }
+  if (!workflowJson) {
+    return {
+      ok: false,
+      provider: "comfyui",
+      mock: false,
+      error:
+        "ComfyUI のワークフロー(API形式JSON)が未設定です。設定画面に貼り付けてください",
+    };
+  }
+
+  try {
+    const { mediaUrl } = await runWorkflow({
+      baseUrl,
+      workflowJson,
+      prompt,
+      image: opts.promptImage,
+      intervalMs: numEnv("COMFYUI_POLL_INTERVAL_MS", 2000),
+      timeoutMs: numEnv("COMFYUI_POLL_TIMEOUT_MS", 10 * 60_000),
+      signal: opts.signal,
+    });
+    return { ok: true, provider: "comfyui", mock: false, mediaUrl };
+  } catch (e) {
+    const msg =
+      e instanceof ComfyUIError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : "ComfyUI 生成に失敗しました";
+    return { ok: false, provider: "comfyui", mock: false, error: msg };
   }
 }
 

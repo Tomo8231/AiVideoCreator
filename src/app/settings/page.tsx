@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ShieldAlert, Check, Trash2 } from "lucide-react";
-import { ApiMode, useSettingsStore } from "@/lib/settingsStore";
+import { ApiMode, VideoProvider, useSettingsStore } from "@/lib/settingsStore";
 import { KeyField } from "@/components/KeyField";
 import { useAuthStore } from "@/lib/authStore";
 import { useThemeStore, Theme } from "@/lib/themeStore";
-import { LogIn, LogOut, FolderOpen, ExternalLink, Moon, Sun } from "lucide-react";
+import {
+  LogIn,
+  LogOut,
+  FolderOpen,
+  ExternalLink,
+  Moon,
+  Sun,
+  Cpu,
+} from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -146,6 +154,9 @@ export default function SettingsPage() {
         </button>
       </section>
 
+      {/* 動画プロバイダ（ComfyUI） */}
+      <ComfyUISection onSaved={flashSaved} />
+
       {/* セキュリティ注意 */}
       <div className="mt-6 flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-200/90">
         <ShieldAlert size={16} className="mt-0.5 shrink-0" />
@@ -157,6 +168,92 @@ export default function SettingsPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+/** 動画生成プロバイダ（RunWay / ローカル ComfyUI）の設定。 */
+function ComfyUISection({ onSaved }: { onSaved: () => void }) {
+  const provider = useSettingsStore((s) => s.videoProvider);
+  const comfyUiUrl = useSettingsStore((s) => s.comfyUiUrl);
+  const comfyUiWorkflow = useSettingsStore((s) => s.comfyUiWorkflow);
+  const setVideoProvider = useSettingsStore((s) => s.setVideoProvider);
+  const update = useSettingsStore((s) => s.update);
+
+  const options: { value: VideoProvider; label: string; desc: string }[] = [
+    { value: "runway", label: "RunWay", desc: "クラウド（従量課金）" },
+    { value: "comfyui", label: "ComfyUI", desc: "ローカル（無料・自前PC）" },
+  ];
+
+  return (
+    <section className="mb-5 flex flex-col gap-3">
+      <h2 className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <Cpu size={13} /> 動画生成プロバイダ
+      </h2>
+
+      <div className="flex gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => {
+              setVideoProvider(opt.value);
+              onSaved();
+            }}
+            className={`flex-1 rounded-xl border px-3 py-3 text-left transition ${
+              provider === opt.value
+                ? "border-accent bg-ink-800"
+                : "border-ink-700 bg-ink-900 hover:border-ink-600"
+            }`}
+          >
+            <div className="text-sm font-semibold">{opt.label}</div>
+            <div className="text-[11px] leading-snug text-gray-400">{opt.desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {provider === "comfyui" && (
+        <div className="flex flex-col gap-3 rounded-xl border border-ink-700 bg-ink-900 p-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-gray-300">ComfyUI のURL</span>
+            <input
+              value={comfyUiUrl}
+              onChange={(e) => update({ comfyUiUrl: e.target.value })}
+              placeholder="http://127.0.0.1:8188"
+              spellCheck={false}
+              className="rounded-xl border border-ink-700 bg-ink-800 px-3.5 py-2.5 text-sm outline-none focus:border-accent"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-gray-300">
+              ワークフロー（API形式JSON）
+            </span>
+            <textarea
+              value={comfyUiWorkflow}
+              onChange={(e) => update({ comfyUiWorkflow: e.target.value })}
+              placeholder='ComfyUI の「Save (API Format)」で書き出したJSONを貼り付け。プロンプト欄に %PROMPT%、画像読み込みノードのファイル名に %IMAGE%、seed に %SEED% を入れておくと差し込まれます。'
+              spellCheck={false}
+              className="min-h-[140px] resize-y rounded-xl border border-ink-700 bg-ink-800 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed outline-none focus:border-accent thin-scroll"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={onSaved}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-soft"
+          >
+            保存
+          </button>
+
+          <p className="text-[11px] leading-relaxed text-gray-500">
+            ※ ローカルの ComfyUI に接続するため、<strong>このアプリも同じPCで起動</strong>
+            してください（サーバー側から {comfyUiUrl || "127.0.0.1:8188"} へ接続）。
+            プレースホルダ: <code>%PROMPT%</code>（プロンプト）/ <code>%IMAGE%</code>
+            （起点画像のファイル名）/ <code>%SEED%</code>（乱数seed）。
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 

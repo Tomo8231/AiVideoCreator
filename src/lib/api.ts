@@ -42,6 +42,12 @@ export interface GenerateVideoRequest {
   promptImage?: string;
   /** クリップ尺（秒）。任意。 */
   durationSec?: number;
+  /** 使用する動画プロバイダ。未指定はサーバー側の既定（runway）。 */
+  provider?: "runway" | "comfyui";
+  /** ComfyUI のベースURL（provider=comfyui のとき）。 */
+  comfyUiUrl?: string;
+  /** ComfyUI の API 形式ワークフローJSON（大きいのでヘッダではなくボディで送る）。 */
+  comfyUiWorkflow?: string;
 }
 
 // ---- /api/render ----

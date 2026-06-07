@@ -13,6 +13,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type ApiMode = "server" | "mock";
+export type VideoProvider = "runway" | "comfyui";
 
 /** ビルド時 env を既定値に。未指定なら server。 */
 const DEFAULT_MODE: ApiMode =
@@ -25,8 +26,20 @@ export interface SettingsState {
   runwayKey: string;
   anthropicKey: string;
 
+  /** 動画生成プロバイダ。comfyui ならローカル ComfyUI を使う。 */
+  videoProvider: VideoProvider;
+  /** ComfyUI のベースURL。 */
+  comfyUiUrl: string;
+  /** ComfyUI の API 形式ワークフローJSON（%PROMPT% / %IMAGE% / %SEED% を含む）。 */
+  comfyUiWorkflow: string;
+
   setApiMode: (mode: ApiMode) => void;
-  update: (patch: Partial<Omit<SettingsState, "setApiMode" | "update" | "clearKeys">>) => void;
+  setVideoProvider: (provider: VideoProvider) => void;
+  update: (
+    patch: Partial<
+      Omit<SettingsState, "setApiMode" | "setVideoProvider" | "update" | "clearKeys">
+    >
+  ) => void;
   clearKeys: () => void;
 }
 
@@ -39,7 +52,12 @@ export const useSettingsStore = create<SettingsState>()(
       runwayKey: "",
       anthropicKey: "",
 
+      videoProvider: "runway",
+      comfyUiUrl: "http://127.0.0.1:8188",
+      comfyUiWorkflow: "",
+
       setApiMode: (mode) => set({ apiMode: mode }),
+      setVideoProvider: (provider) => set({ videoProvider: provider }),
       update: (patch) => set(patch),
       clearKeys: () =>
         set({
