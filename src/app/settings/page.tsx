@@ -35,7 +35,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6 lg:max-w-2xl">
       <header className="mb-5 flex items-center gap-2">
         <button
           type="button"

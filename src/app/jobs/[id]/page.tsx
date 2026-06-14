@@ -55,7 +55,7 @@ export default function JobStatusPage() {
   const running = job?.state === "queued" || job?.state === "running";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6 lg:max-w-4xl">
       <header className="mb-4 flex items-center gap-2">
         <button
           type="button"
@@ -110,7 +110,7 @@ export default function JobStatusPage() {
           )}
 
           {/* シーン別 */}
-          <ul className="flex flex-col gap-2">
+          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {job.scenes.map((s) => (
               <li
                 key={s.id}

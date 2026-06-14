@@ -41,7 +41,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6 lg:max-w-lg">
       <header className="mb-6 flex items-center gap-2">
         <button
           type="button"

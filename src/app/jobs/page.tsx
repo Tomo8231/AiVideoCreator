@@ -40,7 +40,7 @@ export default function JobsListPage() {
   }, [refresh]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-10 pt-6 lg:max-w-4xl">
       <header className="mb-5 flex items-center gap-2">
         <button
           type="button"
@@ -78,7 +78,7 @@ export default function JobsListPage() {
           </button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {jobs.map((j) => (
             <li key={j.id}>
               <button
