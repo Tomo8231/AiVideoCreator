@@ -27,7 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
+    // テーマ初期化スクリプトが描画前に data-theme / color-scheme を設定するため、
+    // SSR と初期DOMの差分は意図的。html 要素のハイドレーション警告を抑制する。
+    <html lang="ja" suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <AuthInit />
