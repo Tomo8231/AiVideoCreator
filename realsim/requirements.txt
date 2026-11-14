@@ -1,0 +1,11 @@
+# 版を固定する（3 日ルール・2026-11-14 確認）。pybullet は未修正の CVE-2025-8854 のため使わず MuJoCo に置き換えた
+# Blender 5.3 の Python モジュール版。Python 3.13 が必要
+bpy==5.3.0
+mujoco==3.17.0
+numpy==2.5.4
+scipy==1.18.1
+soundfile==0.14.0
+pyloudnorm==0.2.0
+# 開発用（スペクトログラム確認・テスト）
+matplotlib==3.11.2
+pytest==9.2.0

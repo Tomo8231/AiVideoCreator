@@ -1,0 +1,15 @@
+.venv/
+out/
+__pycache__/
+*.pyc
+# 大きな素材はリポジトリに入れない（各フォルダの README に入手先を書く）
+assets/hdri/*
+assets/textures/*/
+assets/audio/impacts/*/
+assets/audio/loops/*
+assets/audio/ir/*
+assets/audio/roomtone/*
+assets/fonts/*
+!assets/**/README.md
+!assets/**/.gitkeep
+MUJOCO_LOG.TXT
