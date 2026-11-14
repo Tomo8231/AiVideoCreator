@@ -78,6 +78,27 @@ def _quat_wxyz(q) -> str:
     return f"{w} {x} {y} {z}"
 
 
+def _to_local(q, v) -> np.ndarray:
+    """世界座標のベクトル v を、回転 q（x, y, z, w）の物体の座標系に直す。"""
+    x, y, z, w = q
+    R = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                  [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                  [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+    return R.T @ np.asarray(v, float)
+
+
+def _joint_xml(b) -> str:
+    """動く物体の関節。ふつうは自由（6自由度）、hinge を指定したらその軸まわりの回転だけ。"""
+    if b.hinge is None:
+        return "<freejoint/>"
+    axis, anchor = b.hinge
+    ax = _to_local(b.rotation, axis)
+    ax = ax / np.linalg.norm(ax)
+    pos = _to_local(b.rotation, np.asarray(anchor, float) - np.asarray(b.position, float))
+    return (f'<joint type="hinge" axis="{ax[0]} {ax[1]} {ax[2]}" pos="{pos[0]} {pos[1]} {pos[2]}" '
+            f'damping="{b.hinge_damping}"/>')
+
+
 def build_mjcf(scene: Scene, dt: float) -> str:
     """シーンを MuJoCo の MJCF（XML）にする。1物体＝1ボディ＝1ジオメトリ。"""
     # 接触ばねの時定数。時間刻みの数倍ないと不安定になり、落とした高さより高く跳ね返った（2026-11-14 実測）
@@ -103,7 +124,7 @@ def build_mjcf(scene: Scene, dt: float) -> str:
         else:
             mass = b.mass if b.mass is not None else mat.density * b.volume()
             parts.append(f'<body name="b{i}" pos="{pos}" quat="{_quat_wxyz(b.rotation)}">'
-                         f'<freejoint/><geom name="g{i}" {geom} mass="{mass}"/></body>')
+                         f'{_joint_xml(b)}<geom name="g{i}" {geom} mass="{mass}"/></body>')
     return (f'<mujoco><option timestep="{dt}" gravity="0 0 {-scene.gravity}" integrator="implicitfast" '
             f'cone="elliptic" impratio="1" iterations="150" noslip_iterations="3"/>'
             f'<worldbody>{"".join(parts)}</worldbody></mujoco>')
@@ -132,10 +153,18 @@ def simulate(scene: Scene, substeps: Optional[int] = None, scale: float = 1.0,
     body_id = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, f"b{i}") if dynamic[i] else -1 for i in range(n)]
     qadr = [int(m.jnt_qposadr[m.body_jntadr[body_id[i]]]) if dynamic[i] else -1 for i in range(n)]
     vadr = [int(m.jnt_dofadr[m.body_jntadr[body_id[i]]]) if dynamic[i] else -1 for i in range(n)]
+    hinged = [dynamic[i] and scene.bodies[i].hinge is not None for i in range(n)]
+    nq = [1 if hinged[i] else 7 for i in range(n)]   # 位置の数（回転軸は角度 1 つ、自由な物体は位置 3＋回転 4）
+    nv = [1 if hinged[i] else 6 for i in range(n)]
     radius_for_roll = np.array([b.size[0] / 2 if b.shape in ("sphere", "cylinder") else 0.0 for b in scene.bodies])
     dyn = [i for i in range(n) if dynamic[i]]
 
     def set_velocity(i: int, lin_v, ang_world) -> None:
+        if hinged[i]:
+            # 回転軸の物体は、軸まわりの角速度だけを使う（並進の速度は持てない）
+            axis = np.asarray(scene.bodies[i].hinge[0], float)
+            d.qvel[vadr[i]] = float(np.asarray(ang_world, float) @ (axis / np.linalg.norm(axis)))
+            return
         # freejoint の角速度は物体の座標系で持つので、世界座標から変換する
         R = d.xmat[body_id[i]].reshape(3, 3)
         d.qvel[vadr[i]:vadr[i] + 3] = lin_v
@@ -189,8 +218,8 @@ def simulate(scene: Scene, substeps: Optional[int] = None, scale: float = 1.0,
         for i in held:
             b = scene.bodies[i]
             if t_now < b.release_time:
-                d.qpos[qadr[i]:qadr[i] + 7] = init_qpos[qadr[i]:qadr[i] + 7]
-                d.qvel[vadr[i]:vadr[i] + 6] = 0
+                d.qpos[qadr[i]:qadr[i] + nq[i]] = init_qpos[qadr[i]:qadr[i] + nq[i]]
+                d.qvel[vadr[i]:vadr[i] + nv[i]] = 0
                 changed = True
             elif t_now - b.release_time < dt * 1.5:
                 mujoco.mj_forward(m, d)
@@ -256,7 +285,14 @@ def simulate(scene: Scene, substeps: Optional[int] = None, scale: float = 1.0,
         if progress and f % report_every == 0:
             print(f"  物理: {f}/{F} フレーム（衝突 {len(events)} 回）", flush=True)
 
-    stats = {"max_speed": max_speed, "min_contact_distance": min_dist,
+    # MuJoCo は発散すると警告を記録して初期状態に戻し、黙って計算を続ける（autoreset）。ここで拾って隠さない
+    mj_warn = {name: int(d.warning[int(w)].number) for name, w in mujoco.mjtWarning.__members__.items()
+               if int(w) < len(d.warning) and d.warning[int(w)].number > 0}
+    diverged = [k for k in mj_warn if k in ("mjWARN_BADQACC", "mjWARN_BADQPOS", "mjWARN_BADQVEL")]
+    if diverged or not np.isfinite(transforms).all():
+        raise RuntimeError(f"物理シミュレーションが発散しました（{diverged or 'NaN'}）。substeps を増やすか、"
+                           "物体の配置（初めから重なっていないか）を見直してください。")
+    stats = {"max_speed": max_speed, "min_contact_distance": min_dist, "mujoco_warnings": mj_warn,
              "n_events": len(events), "substeps": substeps, "scale": 1.0, "engine": f"mujoco {mujoco.__version__}"}
     return Recording(
         names=[b.name for b in scene.bodies], fps=fps, transforms=transforms,
@@ -272,6 +308,8 @@ def physics_warnings(rec: Recording, scene: Scene, max_plausible_speed: Optional
     if rec.stats["max_speed"] > limit:
         warns.append(f"物体の最大速度が {rec.stats['max_speed']:.2f} m/s（想定上限 {limit:.1f}）。"
                      "物理の破綻（弾け飛び）の可能性があります。")
+    for k, n in rec.stats.get("mujoco_warnings", {}).items():
+        warns.append(f"MuJoCo の警告 {k} が {n} 回（接触の取りこぼしなどの可能性）。")
     if rec.stats["min_contact_distance"] < -0.002:
         warns.append(f"めり込みが最大 {-rec.stats['min_contact_distance'] * 1000:.1f} mm。"
                      "substeps を増やすか、物体を大きくしてください。")

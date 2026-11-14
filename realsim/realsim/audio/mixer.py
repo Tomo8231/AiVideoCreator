@@ -365,6 +365,12 @@ def _limiter_gain(x: np.ndarray, sr: int, ceiling: float) -> np.ndarray:
 def _master(mix: np.ndarray, sr: int, st: AudioSettings) -> tuple[np.ndarray, dict]:
     meter = pyloudnorm.Meter(sr)
     base = meter.integrated_loudness(mix)
+    if not np.isfinite(base):
+        # ほぼ無音（衝突 0 件など）だとラウドネスが -inf になり、ゲインが inf → 音声が NaN になる。音量はいじらずに返す
+        tp = 20 * np.log10(np.abs(mix).max() + 1e-12)
+        return mix, {"loudness_lufs": None, "target_lufs": st.target_lufs, "true_peak_dbtp": round(float(tp), 2),
+                     "max_limiting_db": 0.0, "applied_gain": 1.0,
+                     "note": "ほぼ無音のため音量を調整していません（衝突が無い／小さすぎる可能性）。"}
     ceiling = 10 ** (st.true_peak_db / 20)
     gain_db = st.target_lufs - base
     for _ in range(6):

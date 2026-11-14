@@ -89,7 +89,11 @@ _mesh_cache: dict = {}
 def _auto_bevel(b: Body) -> float:
     if b.bevel is not None:
         return b.bevel
-    return max(0.0004, min(b.size) * 0.06) if b.shape != "sphere" else 0.0
+    if b.shape == "sphere":
+        return 0.0
+    # 円柱の size は (直径, 未使用, 高さ) なので、2 番目（0）を含めない
+    dims = (b.size[0], b.size[2]) if b.shape == "cylinder" else b.size
+    return max(0.0004, min(dims) * 0.06)
 
 
 def _mesh_for(b: Body) -> bpy.types.Mesh:
@@ -378,7 +382,11 @@ def render(out_dir: Path, frames: Optional[list[int]] = None) -> list[Path]:
         sc.frame_set(f + 1)
         path = out_dir / f"frame_{f:05d}.png"
         sc.render.filepath = str(path)
-        bpy.ops.render.render(write_still=True)
+        t_frame = time.time()
+        res = bpy.ops.render.render(write_still=True)
+        # 書けていない／前回の古い絵のまま、を見逃さない（古いフレームが動画に混ざるのを防ぐ）
+        if "FINISHED" not in res or not path.exists() or path.stat().st_mtime < t_frame - 1:
+            raise RuntimeError(f"フレーム {f} の描画に失敗しました（{res}、{path}）")
         paths.append(path)
         el = time.time() - t0
         eta = el / (k + 1) * (len(frames) - k - 1)

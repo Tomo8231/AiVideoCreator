@@ -6,7 +6,7 @@ Z 軸が上。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Optional, Sequence
+from typing import Tuple, Callable, Optional, Sequence
 
 import numpy as np
 
@@ -38,6 +38,9 @@ class Body:
     color: Optional[Vec3] = None          # 材質の色を上書き（塗装・樹脂など）
     visible: bool = True
     release_time: float = 0.0            # この時刻まで空中に固定（手で持っている状態）してから離す
+    # 回転軸（シーソー・振り子・てこ）。(軸の向き, 軸が通る点) を世界座標で書く。指定するとこの軸まわりにしか回らない
+    hinge: Optional[Tuple[Vec3, Vec3]] = None
+    hinge_damping: float = 0.0           # 軸の摩擦（回転の減衰）[N·m·s/rad]
 
     def volume(self) -> float:
         sx, sy, sz = self.size

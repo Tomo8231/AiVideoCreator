@@ -49,15 +49,23 @@ def run_checks(scene: Scene, rec: Recording, audio: AudioResult) -> dict:
     out = {"physics_warnings": physics_warnings(rec, scene), "audio": dict(audio.report)}
     rep = audio.report
     issues = []
-    if abs(rep["loudness_lufs"] - rep["target_lufs"]) > 1.0:
+    if not np.isfinite(audio.mix).all():
+        issues.append("音声に NaN／無限大が入っている")
+    if rep["loudness_lufs"] is None:
+        issues.append("音がほぼ無音（ラウドネスを測れない）")
+    elif abs(rep["loudness_lufs"] - rep["target_lufs"]) > 1.0:
         issues.append(f"ラウドネス {rep['loudness_lufs']} LUFS（目標 {rep['target_lufs']}）")
-    if rep["true_peak_dbtp"] > -0.9:
+    if not np.isfinite(rep["true_peak_dbtp"]) or rep["true_peak_dbtp"] > -0.9:
         issues.append(f"トゥルーピーク {rep['true_peak_dbtp']} dBTP（上限 -1.0）")
     if np.abs(audio.mix).max() >= 0.999:
         issues.append("クリッピングあり")
     sync = av_sync(audio, rec.fps)
     out["av_sync"] = sync
-    if sync.get("checked", 0) and not sync["ok"]:
-        issues.append(f"映像と音のズレ 最大 {sync['max_offset_ms']} ms（1フレーム {sync['frame_ms']} ms を超過）")
+    # 測っているのは「音を置いた位置」と「物理の衝突時刻」のズレ（描画した映像そのものは見ていない）
+    if not sync.get("checked", 0):
+        issues.append("衝突時刻と音のズレを確かめられる衝突が無かった（未確認）")
+    elif not sync["ok"]:
+        issues.append(f"衝突時刻と音のズレ 最大 {sync['max_offset_ms']} ms（1フレーム {sync['frame_ms']} ms を超過）")
     out["issues"] = issues + out["physics_warnings"]
+    out["passed"] = not out["issues"]
     return out

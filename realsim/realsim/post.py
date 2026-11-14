@@ -52,8 +52,10 @@ def encode(frames_dir: Path, first_frame: int, fps: int, audio: Optional[Path], 
     font = find_font()
     if captions:
         if font is None:
-            print("  注意: assets/fonts/ にフォントがないためテロップを省略しました（日本語は Noto Sans JP 等を置いてください）")
+            raise RuntimeError("テロップ（CAPTIONS）があるのに assets/fonts/ にフォントがありません。日本語は Noto Sans JP 等を置いてください")
         else:
+            # Windows の絶対パスは「C:」の : がフィルタの区切りになるので、/ にそろえて : をエスケープする
+            font = font.resolve().as_posix().replace(":", "\\:")
             for c in captions:
                 filters.append(
                     f"drawtext=fontfile='{font}':text='{_escape(c.text)}':fontcolor=white:"

@@ -64,6 +64,9 @@ def main() -> None:
     t0 = time.time()
     if args.reuse_physics and rec_path.exists():
         rec = Recording.load(rec_path)
+        # シーンを変えたあとに古い結果を使うと、別の物体の動きが貼られる。合わなければ止める
+        if rec.names != [b.name for b in scene.bodies] or rec.fps != scene.fps or rec.n_frames != scene.n_frames:
+            raise SystemExit("前回の物理結果が今のシーンと合いません（物体・fps・長さ）。--reuse-physics を外して計算し直してください")
         print(f"[1/5] 物理: 前回の結果を再利用 ({rec_path})")
     else:
         print(f"[1/5] 物理シミュレーション: 物体 {len(scene.bodies)} 個、{scene.duration:.1f} 秒")
@@ -124,6 +127,8 @@ def main() -> None:
         br.save_blend(out / f"{scene.name}.blend")
     frames_dir = out / f"frames_{args.quality}{'_v' if args.vertical else ''}"
     if args.still:
+        if any(t < 0 or t > scene.duration for t in args.still):
+            raise SystemExit(f"--still の秒数は 0〜{scene.duration} の範囲で指定してください")
         frames = [min(rec.n_frames - 1, int(t * scene.fps)) for t in args.still]
         paths = br.render(out / "stills", frames)
         print("  静止画:", *paths, sep="\n    ")
@@ -143,14 +148,16 @@ def main() -> None:
     captions = getattr(mod, "CAPTIONS", [])
     video = out / f"{scene.name}_{args.quality}{'_vertical' if args.vertical else ''}.mp4"
     encode(frames_dir, first, scene.fps, clip_audio, video, getattr(mod, "POST", PostSettings()), captions)
-    print(f"  完成: {video}")
+    n = len(report["issues"])
+    print(f"  完成: {video}" + (f"（要確認 {n} 件。report.json の issues を見てください）" if n else ""))
     _write_report(out, report, timings, t_start)
 
 
 def _write_report(out: Path, report: dict, timings: dict, t_start: float) -> None:
     timings["total_s"] = round(time.time() - t_start, 1)
     report["timings"] = timings
-    (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=_json_default))
+    (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=_json_default),
+                                     encoding="utf-8")
     print(f"  所要時間: {timings}")
 
 
